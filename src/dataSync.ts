@@ -1,5 +1,4 @@
 import { FreezerData, ItemTemplate } from './types';
-import { saveFreezerData, saveItemTemplates } from './storage';
 
 export const exportData = (freezerData: FreezerData, templates: ItemTemplate[]) => {
   const dataToExport = {
