@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Freezer from './Freezer';
 import TemplatesManager from './TemplatesManager';
 import { FreezerData, Item, ItemTemplate } from './types';
 import { loadFreezerData, saveFreezerData, loadItemTemplates, saveItemTemplates } from './storage';
+import { exportData, importData } from './dataSync';
 
 function App() {
   const [freezerData, setFreezerData] = useState<FreezerData>(loadFreezerData);
@@ -82,9 +83,53 @@ function App() {
     return allItems.some(item => item.name === name);
   };
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleExport = () => {
+    exportData(freezerData, templates);
+  };
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const { freezerData: importedFreezerData, templates: importedTemplates } = await importData(file);
+      setFreezerData(importedFreezerData);
+      setTemplates(importedTemplates);
+      saveFreezerData(importedFreezerData);
+      saveItemTemplates(importedTemplates);
+      alert('Data úspěšně importována!');
+    } catch (error) {
+      alert('Chyba při importu dat: ' + (error as Error).message);
+    }
+    
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   return (
     <>
-      <h1>🧊 Evidence mrazáků</h1>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+        <h1 style={{ margin: 0 }}>🧊 Evidence mrazáků</h1>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button onClick={handleExport} title="Stáhnout zálohu dat">📥 Exportovat data</button>
+          <button onClick={handleImportClick} title="Nahrát data ze zálohy">📤 Importovat data</button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json"
+            onChange={handleImportFile}
+            style={{ display: 'none' }}
+          />
+        </div>
+      </div>
       
       <TemplatesManager
         templates={templates}
