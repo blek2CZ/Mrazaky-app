@@ -13,6 +13,8 @@ export default function SyncModal({ mode, onClose, onGenerate, onEnter }: SyncMo
   const [generatedCode, setGeneratedCode] = useState('');
   const [enteredCode, setEnteredCode] = useState('');
   const [adminPassword, setAdminPasswordInput] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [passwordError, setPasswordError] = useState('');
 
   const handleGenerate = () => {
@@ -27,15 +29,23 @@ export default function SyncModal({ mode, onClose, onGenerate, onEnter }: SyncMo
   const handleConfirmGenerate = () => {
     if (!generatedCode) return;
 
-    // Ověření admin hesla
-    if (!verifyAdminPassword(adminPassword)) {
-      setPasswordError('Nesprávné admin heslo!');
-      return;
-    }
-
-    // Pokud je to první spuštění, uložíme heslo
+    // Pokud nastavujeme heslo poprvé, zkontroluj shodu
     if (!hasAdminPassword()) {
+      if (adminPassword !== confirmPassword) {
+        setPasswordError('Hesla se neshodují!');
+        return;
+      }
+      if (adminPassword.length < 4) {
+        setPasswordError('Heslo musí mít alespoň 4 znaky!');
+        return;
+      }
       setAdminPassword(adminPassword);
+    } else {
+      // Ověření existującího admin hesla
+      if (!verifyAdminPassword(adminPassword)) {
+        setPasswordError('Nesprávné admin heslo!');
+        return;
+      }
     }
 
     onGenerate(generatedCode);
@@ -75,16 +85,53 @@ export default function SyncModal({ mode, onClose, onGenerate, onEnter }: SyncMo
                   <label>
                     {hasAdminPassword() ? 'Admin heslo:' : 'Nastavte si admin heslo:'}
                   </label>
-                  <input
-                    type="password"
-                    value={adminPassword}
-                    onChange={(e) => {
-                      setAdminPasswordInput(e.target.value);
-                      setPasswordError('');
-                    }}
-                    placeholder={hasAdminPassword() ? 'Zadejte heslo' : 'Vytvořte si heslo'}
-                    autoFocus
-                  />
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={adminPassword}
+                      onChange={(e) => {
+                        setAdminPasswordInput(e.target.value);
+                        setPasswordError('');
+                      }}
+                      placeholder={hasAdminPassword() ? 'Zadejte heslo' : 'Vytvořte si heslo'}
+                      autoFocus
+                      style={{ paddingRight: '3rem' }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      style={{
+                        position: 'absolute',
+                        right: '0.5rem',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontSize: '1.2em',
+                        padding: '0.25rem 0.5rem'
+                      }}
+                      title={showPassword ? 'Skrýt heslo' : 'Zobrazit heslo'}
+                    >
+                      {showPassword ? '👁️' : '👁️‍🗨️'}
+                    </button>
+                  </div>
+                  
+                  {!hasAdminPassword() && (
+                    <>
+                      <label style={{ marginTop: '0.75rem' }}>Potvrďte heslo:</label>
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        value={confirmPassword}
+                        onChange={(e) => {
+                          setConfirmPassword(e.target.value);
+                          setPasswordError('');
+                        }}
+                        placeholder="Zadejte heslo znovu"
+                      />
+                    </>
+                  )}
+                  
                   {passwordError && (
                     <p style={{ color: '#f44336', fontSize: '0.9em', margin: '0.5rem 0 0 0' }}>
                       {passwordError}
@@ -102,7 +149,7 @@ export default function SyncModal({ mode, onClose, onGenerate, onEnter }: SyncMo
                   <button 
                     onClick={handleConfirmGenerate} 
                     style={{ backgroundColor: '#4caf50' }}
-                    disabled={!adminPassword}
+                    disabled={!adminPassword || (!hasAdminPassword() && !confirmPassword)}
                   >
                     Použít tento kód
                   </button>

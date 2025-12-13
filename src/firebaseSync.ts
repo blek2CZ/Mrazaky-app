@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getFirestore, doc, setDoc, onSnapshot, collection } from 'firebase/firestore';
+import { getFirestore, doc, setDoc, onSnapshot } from 'firebase/firestore';
 import { FreezerData, ItemTemplate } from './types';
 
 // Firebase konfigurace - toto jsou veřejné klíče, je to bezpečné
