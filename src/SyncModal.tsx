@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { verifyAdminPassword, setAdminPassword, hasAdminPassword } from './adminAuth';
 import './SyncModal.css';
 
 interface SyncModalProps {
@@ -11,6 +12,8 @@ interface SyncModalProps {
 export default function SyncModal({ mode, onClose, onGenerate, onEnter }: SyncModalProps) {
   const [generatedCode, setGeneratedCode] = useState('');
   const [enteredCode, setEnteredCode] = useState('');
+  const [adminPassword, setAdminPasswordInput] = useState('');
+  const [passwordError, setPasswordError] = useState('');
 
   const handleGenerate = () => {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -22,9 +25,20 @@ export default function SyncModal({ mode, onClose, onGenerate, onEnter }: SyncMo
   };
 
   const handleConfirmGenerate = () => {
-    if (generatedCode) {
-      onGenerate(generatedCode);
+    if (!generatedCode) return;
+
+    // Ověření admin hesla
+    if (!verifyAdminPassword(adminPassword)) {
+      setPasswordError('Nesprávné admin heslo!');
+      return;
     }
+
+    // Pokud je to první spuštění, uložíme heslo
+    if (!hasAdminPassword()) {
+      setAdminPassword(adminPassword);
+    }
+
+    onGenerate(generatedCode);
   };
 
   const handleConfirmEnter = () => {
@@ -56,9 +70,40 @@ export default function SyncModal({ mode, onClose, onGenerate, onEnter }: SyncMo
                 <p style={{ fontSize: '0.9em', color: '#f44336' }}>
                   ⚠️ Uložte si tento kód! Budete ho potřebovat na ostatních zařízeních.
                 </p>
+                
+                <div className="form-field" style={{ marginTop: '1rem' }}>
+                  <label>
+                    {hasAdminPassword() ? 'Admin heslo:' : 'Nastavte si admin heslo:'}
+                  </label>
+                  <input
+                    type="password"
+                    value={adminPassword}
+                    onChange={(e) => {
+                      setAdminPasswordInput(e.target.value);
+                      setPasswordError('');
+                    }}
+                    placeholder={hasAdminPassword() ? 'Zadejte heslo' : 'Vytvořte si heslo'}
+                    autoFocus
+                  />
+                  {passwordError && (
+                    <p style={{ color: '#f44336', fontSize: '0.9em', margin: '0.5rem 0 0 0' }}>
+                      {passwordError}
+                    </p>
+                  )}
+                  {!hasAdminPassword() && (
+                    <p style={{ fontSize: '0.85em', color: '#ccc', margin: '0.5rem 0 0 0' }}>
+                      Toto heslo budete potřebovat pro generování dalších sync kódů.
+                    </p>
+                  )}
+                </div>
+
                 <div className="sync-modal-actions">
                   <button onClick={handleGenerate}>Generovat nový</button>
-                  <button onClick={handleConfirmGenerate} style={{ backgroundColor: '#4caf50' }}>
+                  <button 
+                    onClick={handleConfirmGenerate} 
+                    style={{ backgroundColor: '#4caf50' }}
+                    disabled={!adminPassword}
+                  >
                     Použít tento kód
                   </button>
                 </div>
