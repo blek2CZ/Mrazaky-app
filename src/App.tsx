@@ -5,8 +5,8 @@ import SyncModal from './SyncModal';
 import { FreezerData, Item, ItemTemplate } from './types';
 import { loadFreezerData, saveFreezerData, loadItemTemplates, saveItemTemplates } from './storage';
 import { exportData, importData } from './dataSync';
-import { getSyncCode, saveSyncCode, clearSyncCode, syncDataToFirebase, subscribeToSync, isFirebaseConfigured, invalidateSyncCode } from './firebaseSync';
-import { verifyAdminPassword } from './adminAuth';
+import { getSyncCode, saveSyncCode, clearSyncCode, syncDataToFirebase, subscribeToSync, isFirebaseConfigured, invalidateSyncCode, getAdminPasswordHash } from './firebaseSync';
+import { verifyPasswordHash } from './adminAuth';
 import './App.css';
 
 function App() {
@@ -131,7 +131,7 @@ function App() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleGenerateSync = async (code: string) => {
+  const handleGenerateSync = async (code: string, passwordHash: string) => {
     // Pokud už máme starý kód, invalidujeme ho
     if (syncCode && firebaseConfigured) {
       await invalidateSyncCode(syncCode);
@@ -141,7 +141,8 @@ function App() {
     setSyncCode(code);
     setShowSyncModal(null);
     if (firebaseConfigured) {
-      syncDataToFirebase(code, freezerData, templates);
+      // Uložíme data včetně hash hesla
+      await syncDataToFirebase(code, freezerData, templates, passwordHash);
     }
   };
 
@@ -156,14 +157,23 @@ function App() {
   };
 
   const handleConfirmDisconnect = async (password: string) => {
-    if (!verifyAdminPassword(password)) {
+    if (!syncCode || !firebaseConfigured) {
+      return false;
+    }
+
+    // Ověříme heslo proti hash v Firebase
+    const storedHash = await getAdminPasswordHash(syncCode);
+    if (!storedHash) {
+      return false;
+    }
+
+    const isValid = await verifyPasswordHash(password, storedHash);
+    if (!isValid) {
       return false;
     }
     
     // Invalidujeme kód pro ostatní uživatele
-    if (syncCode && firebaseConfigured) {
-      await invalidateSyncCode(syncCode);
-    }
+    await invalidateSyncCode(syncCode);
     
     clearSyncCode();
     setSyncCode(null);
@@ -245,6 +255,7 @@ function App() {
           onClose={() => setShowSyncModal(null)}
           onGenerate={handleGenerateSync}
           onEnter={handleEnterSync}
+          existingSyncCode={syncCode}
         />
       )}
 

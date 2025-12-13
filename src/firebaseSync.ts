@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getFirestore, doc, setDoc, onSnapshot } from 'firebase/firestore';
+import { getFirestore, doc, setDoc, onSnapshot, getDoc } from 'firebase/firestore';
 import { FreezerData, ItemTemplate } from './types';
 
 // Firebase konfigurace - toto jsou veřejné klíče, je to bezpečné
@@ -46,18 +46,26 @@ export const clearSyncCode = () => {
 export const syncDataToFirebase = async (
   syncCode: string,
   freezerData: FreezerData,
-  templates: ItemTemplate[]
+  templates: ItemTemplate[],
+  adminPasswordHash?: string
 ) => {
   if (!db) {
     throw new Error('Firebase není nakonfigurován');
   }
 
   const dataRef = doc(db, 'sync-data', syncCode.toUpperCase());
-  await setDoc(dataRef, {
+  const data: any = {
     freezerData,
     templates,
     lastUpdated: new Date().toISOString()
-  });
+  };
+  
+  // Při vytvoření nového kódu uložíme i hash hesla
+  if (adminPasswordHash) {
+    data.adminPasswordHash = adminPasswordHash;
+  }
+  
+  await setDoc(dataRef, data, { merge: true });
 };
 
 export const subscribeToSync = (
@@ -99,6 +107,22 @@ export const invalidateSyncCode = async (syncCode: string) => {
     invalidated: true,
     invalidatedAt: new Date().toISOString()
   }, { merge: true });
+};
+
+export const getAdminPasswordHash = async (syncCode: string): Promise<string | null> => {
+  if (!db) {
+    throw new Error('Firebase není nakonfigurován');
+  }
+
+  const dataRef = doc(db, 'sync-data', syncCode.toUpperCase());
+  const snapshot = await getDoc(dataRef);
+  
+  if (snapshot.exists()) {
+    const data = snapshot.data();
+    return data.adminPasswordHash || null;
+  }
+  
+  return null;
 };
 
 export const isFirebaseConfigured = (): boolean => {

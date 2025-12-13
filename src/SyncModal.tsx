@@ -1,21 +1,24 @@
 import { useState } from 'react';
-import { verifyAdminPassword, setAdminPassword, hasAdminPassword } from './adminAuth';
+import { hashPassword, verifyPasswordHash } from './adminAuth';
+import { getAdminPasswordHash } from './firebaseSync';
 import './SyncModal.css';
 
 interface SyncModalProps {
   mode: 'generate' | 'enter';
   onClose: () => void;
-  onGenerate: (code: string) => void;
+  onGenerate: (code: string, passwordHash: string) => void;
   onEnter: (code: string) => void;
+  existingSyncCode?: string | null;
 }
 
-export default function SyncModal({ mode, onClose, onGenerate, onEnter }: SyncModalProps) {
+export default function SyncModal({ mode, onClose, onGenerate, onEnter, existingSyncCode }: SyncModalProps) {
   const [generatedCode, setGeneratedCode] = useState('');
   const [enteredCode, setEnteredCode] = useState('');
   const [adminPassword, setAdminPasswordInput] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [passwordError, setPasswordError] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const handleGenerate = () => {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -26,29 +29,51 @@ export default function SyncModal({ mode, onClose, onGenerate, onEnter }: SyncMo
     setGeneratedCode(code);
   };
 
-  const handleConfirmGenerate = () => {
-    if (!generatedCode) return;
+  const handleConfirmGenerate = async () => {
+    if (!generatedCode || isProcessing) return;
 
-    // Pokud nastavujeme heslo poprvé, zkontroluj shodu
-    if (!hasAdminPassword()) {
-      if (adminPassword !== confirmPassword) {
-        setPasswordError('Hesla se neshodují!');
-        return;
+    setIsProcessing(true);
+    setPasswordError('');
+
+    try {
+      // Pokud už máme sync kód, musíme ověřit admin heslo z Firebase
+      if (existingSyncCode) {
+        const storedHash = await getAdminPasswordHash(existingSyncCode);
+        if (!storedHash) {
+          setPasswordError('Chyba: Admin heslo nebylo nalezeno v databázi!');
+          setIsProcessing(false);
+          return;
+        }
+        
+        const isValid = await verifyPasswordHash(adminPassword, storedHash);
+        if (!isValid) {
+          setPasswordError('Nesprávné admin heslo!');
+          setIsProcessing(false);
+          return;
+        }
+      } else {
+        // Vytváříme první sync kód - zkontroluj shodu hesel
+        if (adminPassword !== confirmPassword) {
+          setPasswordError('Hesla se neshodují!');
+          setIsProcessing(false);
+          return;
+        }
+        if (adminPassword.length < 4) {
+          setPasswordError('Heslo musí mít alespoň 4 znaky!');
+          setIsProcessing(false);
+          return;
+        }
       }
-      if (adminPassword.length < 4) {
-        setPasswordError('Heslo musí mít alespoň 4 znaky!');
-        return;
-      }
-      setAdminPassword(adminPassword);
-    } else {
-      // Ověření existującího admin hesla
-      if (!verifyAdminPassword(adminPassword)) {
-        setPasswordError('Nesprávné admin heslo!');
-        return;
-      }
+
+      // Vytvoř hash hesla
+      const passwordHash = await hashPassword(adminPassword);
+      onGenerate(generatedCode, passwordHash);
+    } catch (error) {
+      setPasswordError('Chyba při ověřování hesla!');
+      console.error(error);
+    } finally {
+      setIsProcessing(false);
     }
-
-    onGenerate(generatedCode);
   };
 
   const handleConfirmEnter = () => {
@@ -83,7 +108,7 @@ export default function SyncModal({ mode, onClose, onGenerate, onEnter }: SyncMo
                 
                 <div className="form-field" style={{ marginTop: '1rem' }}>
                   <label>
-                    {hasAdminPassword() ? 'Admin heslo:' : 'Nastavte si admin heslo:'}
+                    {existingSyncCode ? 'Admin heslo:' : 'Nastavte si admin heslo:'}
                   </label>
                   <div style={{ position: 'relative' }}>
                     <input
@@ -93,9 +118,10 @@ export default function SyncModal({ mode, onClose, onGenerate, onEnter }: SyncMo
                         setAdminPasswordInput(e.target.value);
                         setPasswordError('');
                       }}
-                      placeholder={hasAdminPassword() ? 'Zadejte heslo' : 'Vytvořte si heslo'}
+                      placeholder={existingSyncCode ? 'Zadejte heslo' : 'Vytvořte si heslo'}
                       autoFocus
                       style={{ paddingRight: '3rem' }}
+                      disabled={isProcessing}
                     />
                     <button
                       type="button"
@@ -117,7 +143,7 @@ export default function SyncModal({ mode, onClose, onGenerate, onEnter }: SyncMo
                     </button>
                   </div>
                   
-                  {!hasAdminPassword() && (
+                  {!existingSyncCode && (
                     <>
                       <label style={{ marginTop: '0.75rem' }}>Potvrďte heslo:</label>
                       <input
@@ -128,6 +154,7 @@ export default function SyncModal({ mode, onClose, onGenerate, onEnter }: SyncMo
                           setPasswordError('');
                         }}
                         placeholder="Zadejte heslo znovu"
+                        disabled={isProcessing}
                       />
                     </>
                   )}
@@ -137,7 +164,7 @@ export default function SyncModal({ mode, onClose, onGenerate, onEnter }: SyncMo
                       {passwordError}
                     </p>
                   )}
-                  {!hasAdminPassword() && (
+                  {!existingSyncCode && (
                     <p style={{ fontSize: '0.85em', color: '#ccc', margin: '0.5rem 0 0 0' }}>
                       Toto heslo budete potřebovat pro generování dalších sync kódů.
                     </p>
@@ -145,13 +172,13 @@ export default function SyncModal({ mode, onClose, onGenerate, onEnter }: SyncMo
                 </div>
 
                 <div className="sync-modal-actions">
-                  <button onClick={handleGenerate}>Generovat nový</button>
+                  <button onClick={handleGenerate} disabled={isProcessing}>Generovat nový</button>
                   <button 
                     onClick={handleConfirmGenerate} 
                     style={{ backgroundColor: '#4caf50' }}
-                    disabled={!adminPassword || (!hasAdminPassword() && !confirmPassword)}
+                    disabled={!adminPassword || (!existingSyncCode && !confirmPassword) || isProcessing}
                   >
-                    Použít tento kód
+                    {isProcessing ? 'Zpracovávám...' : 'Použít tento kód'}
                   </button>
                 </div>
               </>
