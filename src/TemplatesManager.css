@@ -1,0 +1,119 @@
+.templates-manager {
+  background-color: #2a2a2a;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+.templates-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+  padding: 0.5rem 0;
+}
+
+.templates-header:hover h2 {
+  color: #7ee3ff;
+}
+
+.templates-manager h2 {
+  margin: 0;
+  color: #61dafb;
+  font-size: 1.5em;
+}
+
+.toggle-button {
+  padding: 0.5em;
+  min-width: 40px;
+  background-color: transparent;
+  border: 1px solid #646cff;
+  color: #646cff;
+  font-size: 0.9em;
+}
+
+.templates-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.template-item {
+  background-color: #1a1a1a;
+  border: 1px solid #444;
+  border-radius: 6px;
+  padding: 0.75rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: border-color 0.3s;
+}
+
+.template-item:hover {
+  border-color: #646cff;
+}
+
+.template-name {
+  font-weight: 500;
+}
+
+.template-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.template-actions button {
+  padding: 0.3em 0.6em;
+  font-size: 0.9em;
+}
+
+.add-template-form {
+  margin-top: 1rem;
+  padding: 1rem;
+  background-color: #1a1a1a;
+  border-radius: 6px;
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-end;
+}
+
+.add-template-form input {
+  flex: 1;
+}
+
+@media (prefers-color-scheme: light) {
+  .templates-manager {
+    background-color: #f0f0f0;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+
+  .templates-header:hover h2 {
+    color: #0052a3;
+  }
+
+  .templates-manager h2 {
+    color: #0066cc;
+  }
+
+  .toggle-button {
+    background-color: transparent;
+    border-color: #0066cc;
+    color: #0066cc;
+  }
+
+  .template-item {
+    background-color: #ffffff;
+    border-color: #ddd;
+  }
+
+  .template-item:hover {
+    border-color: #646cff;
+  }
+
+  .add-template-form {
+    background-color: #ffffff;
+  }
+}

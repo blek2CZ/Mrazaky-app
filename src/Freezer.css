@@ -1,0 +1,215 @@
+.freezer {
+  background-color: #2a2a2a;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+.freezer h2 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  color: #61dafb;
+  font-size: 1.5em;
+}
+
+.drawers {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.drawer {
+  background-color: #1a1a1a;
+  border: 2px solid #444;
+  border-radius: 8px;
+  padding: 1rem;
+  transition: border-color 0.3s;
+}
+
+.drawer:hover {
+  border-color: #646cff;
+}
+
+.drawer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #444;
+}
+
+.drawer-title {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  cursor: pointer;
+  user-select: none;
+  flex: 1;
+}
+
+.drawer-title:hover h3 {
+  color: #fff;
+}
+
+.drawer-header h3 {
+  margin: 0;
+  font-size: 1.1em;
+  color: #ccc;
+}
+
+.item-count {
+  font-size: 0.9em;
+  color: #61dafb;
+  font-weight: 500;
+}
+
+.toggle-drawer-button {
+  padding: 0.3em 0.5em;
+  min-width: 35px;
+  font-size: 0.9em;
+  background-color: transparent;
+  border: 1px solid #646cff;
+  color: #646cff;
+}
+
+.items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem;
+  background-color: #2a2a2a;
+  border-radius: 4px;
+  gap: 0.5rem;
+}
+
+.item-info {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.item-name {
+  font-weight: 500;
+}
+
+.item-quantity {
+  color: #61dafb;
+  font-weight: 600;
+}
+
+.item-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.item-actions button {
+  padding: 0.3em 0.6em;
+  font-size: 0.9em;
+}
+
+.add-item-form {
+  margin-top: 1rem;
+  padding: 1rem;
+  background-color: #2a2a2a;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.form-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-end;
+}
+
+.form-row > * {
+  flex: 1;
+}
+
+.form-row button {
+  flex: 0 0 auto;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.form-field label {
+  font-size: 0.9em;
+  color: #ccc;
+}
+
+.quantity-input {
+  width: 80px;
+}
+
+@media (prefers-color-scheme: light) {
+  .freezer {
+    background-color: #f0f0f0;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+
+  .freezer h2 {
+    color: #0066cc;
+  }
+
+  .drawer {
+    background-color: #ffffff;
+    border-color: #ddd;
+  }
+
+  .drawer:hover {
+    border-color: #646cff;
+  }
+
+  .drawer-header {
+    border-bottom-color: #ddd;
+  }
+
+  .drawer-title:hover h3 {
+    color: #000;
+  }
+
+  .drawer-header h3 {
+    color: #333;
+  }
+
+  .item-count {
+    color: #0066cc;
+  }
+
+  .toggle-drawer-button {
+    background-color: transparent;
+    border-color: #0066cc;
+    color: #0066cc;
+  }
+
+  .item {
+    background-color: #f9f9f9;
+  }
+
+  .item-quantity {
+    color: #0066cc;
+  }
+
+  .add-item-form {
+    background-color: #f0f0f0;
+  }
+
+  .form-field label {
+    color: #555;
+  }
+}
