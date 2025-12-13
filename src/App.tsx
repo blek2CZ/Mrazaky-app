@@ -1,14 +1,20 @@
 import { useState, useEffect, useRef } from 'react';
 import Freezer from './Freezer';
 import TemplatesManager from './TemplatesManager';
+import SyncModal from './SyncModal';
 import { FreezerData, Item, ItemTemplate } from './types';
 import { loadFreezerData, saveFreezerData, loadItemTemplates, saveItemTemplates } from './storage';
 import { exportData, importData } from './dataSync';
+import { getSyncCode, saveSyncCode, clearSyncCode, syncDataToFirebase, subscribeToSync, isFirebaseConfigured } from './firebaseSync';
 import './App.css';
 
 function App() {
   const [freezerData, setFreezerData] = useState<FreezerData>(loadFreezerData);
   const [templates, setTemplates] = useState<ItemTemplate[]>(loadItemTemplates);
+  const [syncCode, setSyncCode] = useState<string | null>(getSyncCode());
+  const [showSyncModal, setShowSyncModal] = useState<'generate' | 'enter' | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const firebaseConfigured = isFirebaseConfigured();
 
   useEffect(() => {
     saveFreezerData(freezerData);
@@ -17,6 +23,32 @@ function App() {
   useEffect(() => {
     saveItemTemplates(templates);
   }, [templates]);
+
+  // Firebase synchronizace
+  useEffect(() => {
+    if (!syncCode || !firebaseConfigured) return;
+
+    setIsSyncing(true);
+    const unsubscribe = subscribeToSync(syncCode, ({ freezerData: newFreezerData, templates: newTemplates }) => {
+      setFreezerData(newFreezerData);
+      setTemplates(newTemplates);
+      saveFreezerData(newFreezerData);
+      saveItemTemplates(newTemplates);
+    });
+
+    return () => unsubscribe();
+  }, [syncCode, firebaseConfigured]);
+
+  // Auto-sync when data changes
+  useEffect(() => {
+    if (syncCode && isSyncing && firebaseConfigured) {
+      const timeoutId = setTimeout(() => {
+        syncDataToFirebase(syncCode, freezerData, templates).catch(console.error);
+      }, 1000); // Debounce 1 sekunda
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [freezerData, templates, syncCode, isSyncing, firebaseConfigured]);
 
   const handleAddItem = (freezerType: 'small' | 'large', drawerId: number, item: Item) => {
     setFreezerData(prev => ({
@@ -86,6 +118,29 @@ function App() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const handleGenerateSync = (code: string) => {
+    saveSyncCode(code);
+    setSyncCode(code);
+    setShowSyncModal(null);
+    if (firebaseConfigured) {
+      syncDataToFirebase(code, freezerData, templates);
+    }
+  };
+
+  const handleEnterSync = (code: string) => {
+    saveSyncCode(code);
+    setSyncCode(code);
+    setShowSyncModal(null);
+  };
+
+  const handleDisconnectSync = () => {
+    if (confirm('Opravdu chcete odpojit synchronizaci? Data zůstanou uložená lokálně.')) {
+      clearSyncCode();
+      setSyncCode(null);
+      setIsSyncing(false);
+    }
+  };
+
   const handleExport = () => {
     exportData(freezerData, templates);
   };
@@ -120,8 +175,29 @@ function App() {
       <div className="app-header">
         <h1>🧊 Evidence mrazáků</h1>
         <div className="app-actions">
-          <button onClick={handleExport} title="Stáhnout zálohu dat">📥 Exportovat data</button>
-          <button onClick={handleImportClick} title="Nahrát data ze zálohy">📤 Importovat data</button>
+          {firebaseConfigured ? (
+            syncCode ? (
+              <>
+                <div className="sync-status connected">
+                  <span className="sync-indicator"></span>
+                  Sync: {syncCode}
+                </div>
+                <button onClick={handleDisconnectSync} title="Odpojit synchronizaci">🚫 Odpojit</button>
+              </>
+            ) : (
+              <>
+                <button onClick={() => setShowSyncModal('generate')} title="Vytvořit nový synchronizační kód">🔄 Nový sync kód</button>
+                <button onClick={() => setShowSyncModal('enter')} title="Zadat existující kód">🔑 Zadat kód</button>
+              </>
+            )
+          ) : (
+            <div className="sync-status disconnected" title="Firebase není nakonfigurován">
+              <span className="sync-indicator"></span>
+              Sync nedostupný
+            </div>
+          )}
+          <button onClick={handleExport} title="Stáhnout zálohu dat">📥 Export</button>
+          <button onClick={handleImportClick} title="Nahrát data ze zálohy">📤 Import</button>
           <input
             ref={fileInputRef}
             type="file"
@@ -131,6 +207,15 @@ function App() {
           />
         </div>
       </div>
+
+      {showSyncModal && (
+        <SyncModal
+          mode={showSyncModal}
+          onClose={() => setShowSyncModal(null)}
+          onGenerate={handleGenerateSync}
+          onEnter={handleEnterSync}
+        />
+      )}
       
       <TemplatesManager
         templates={templates}

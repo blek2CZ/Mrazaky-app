@@ -1,0 +1,142 @@
+.sync-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.sync-modal {
+  background-color: #2a2a2a;
+  border-radius: 12px;
+  padding: 2rem;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
+}
+
+.sync-modal h2 {
+  margin-top: 0;
+  color: #61dafb;
+  font-size: 1.5em;
+  margin-bottom: 1rem;
+}
+
+.sync-modal p {
+  color: #ccc;
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+}
+
+.sync-code-display {
+  background-color: #1a1a1a;
+  border: 2px solid #61dafb;
+  border-radius: 8px;
+  padding: 1.5rem;
+  text-align: center;
+  margin: 1.5rem 0;
+}
+
+.sync-code-display .code {
+  font-size: 2.5em;
+  font-weight: bold;
+  color: #61dafb;
+  letter-spacing: 0.2em;
+  font-family: 'Courier New', monospace;
+}
+
+.sync-code-input {
+  width: 100%;
+  padding: 1rem;
+  font-size: 1.5em;
+  text-align: center;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  font-family: 'Courier New', monospace;
+  margin-bottom: 1rem;
+}
+
+.sync-modal-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+}
+
+.sync-modal-actions button {
+  flex: 1;
+}
+
+.sync-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background-color: #2a2a2a;
+  border-radius: 6px;
+  font-size: 0.9em;
+}
+
+.sync-status.connected {
+  color: #4caf50;
+}
+
+.sync-status.disconnected {
+  color: #f44336;
+}
+
+.sync-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: currentColor;
+}
+
+@media (prefers-color-scheme: light) {
+  .sync-modal {
+    background-color: #ffffff;
+  }
+
+  .sync-modal h2 {
+    color: #0066cc;
+  }
+
+  .sync-modal p {
+    color: #333;
+  }
+
+  .sync-code-display {
+    background-color: #f0f0f0;
+    border-color: #0066cc;
+  }
+
+  .sync-code-display .code {
+    color: #0066cc;
+  }
+
+  .sync-status {
+    background-color: #f0f0f0;
+  }
+}
+
+@media (max-width: 768px) {
+  .sync-modal {
+    padding: 1.5rem;
+  }
+
+  .sync-code-display .code {
+    font-size: 2em;
+  }
+
+  .sync-modal-actions {
+    flex-direction: column;
+  }
+
+  .sync-modal-actions button {
+    width: 100%;
+  }
+}
