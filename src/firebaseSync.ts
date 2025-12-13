@@ -4,16 +4,13 @@ import { FreezerData, ItemTemplate } from './types';
 
 // Firebase konfigurace - toto jsou veřejné klíče, je to bezpečné
 const firebaseConfig = {
-  apiKey: "AIzaSyBOtExampleKey123456789",
+  apiKey: "AIzaSyAgnC9CcCzQMmWcU4vnZaM92cC_paieCYA",
   authDomain: "mrazaky-app.firebaseapp.com",
   projectId: "mrazaky-app",
-  storageBucket: "mrazaky-app.appspot.com",
-  messagingSenderId: "123456789",
-  appId: "1:123456789:web:abcdef123456"
+  storageBucket: "mrazaky-app.firebasestorage.app",
+  messagingSenderId: "928251154928",
+  appId: "1:928251154928:web:da4da2c2237a30c2424d35"
 };
-
-// POZNÁMKA: Pro funkčnost je potřeba vytvořit Firebase projekt na https://console.firebase.google.com
-// a nahradit výše uvedenou konfiguraci skutečnými hodnotami
 
 let app: any = null;
 let db: any = null;
