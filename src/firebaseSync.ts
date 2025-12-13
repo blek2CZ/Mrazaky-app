@@ -62,7 +62,8 @@ export const syncDataToFirebase = async (
 
 export const subscribeToSync = (
   syncCode: string,
-  onDataUpdate: (data: { freezerData: FreezerData; templates: ItemTemplate[] }) => void
+  onDataUpdate: (data: { freezerData: FreezerData; templates: ItemTemplate[] }) => void,
+  onInvalidated?: () => void
 ) => {
   if (!db) {
     throw new Error('Firebase není nakonfigurován');
@@ -73,12 +74,31 @@ export const subscribeToSync = (
   return onSnapshot(dataRef, (snapshot) => {
     if (snapshot.exists()) {
       const data = snapshot.data();
+      
+      // Kontrola, zda nebyl kód invalidován
+      if (data.invalidated && onInvalidated) {
+        onInvalidated();
+        return;
+      }
+      
       onDataUpdate({
         freezerData: data.freezerData,
         templates: data.templates
       });
     }
   });
+};
+
+export const invalidateSyncCode = async (syncCode: string) => {
+  if (!db) {
+    throw new Error('Firebase není nakonfigurován');
+  }
+
+  const dataRef = doc(db, 'sync-data', syncCode.toUpperCase());
+  await setDoc(dataRef, {
+    invalidated: true,
+    invalidatedAt: new Date().toISOString()
+  }, { merge: true });
 };
 
 export const isFirebaseConfigured = (): boolean => {

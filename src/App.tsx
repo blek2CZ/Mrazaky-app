@@ -5,7 +5,8 @@ import SyncModal from './SyncModal';
 import { FreezerData, Item, ItemTemplate } from './types';
 import { loadFreezerData, saveFreezerData, loadItemTemplates, saveItemTemplates } from './storage';
 import { exportData, importData } from './dataSync';
-import { getSyncCode, saveSyncCode, clearSyncCode, syncDataToFirebase, subscribeToSync, isFirebaseConfigured } from './firebaseSync';
+import { getSyncCode, saveSyncCode, clearSyncCode, syncDataToFirebase, subscribeToSync, isFirebaseConfigured, invalidateSyncCode } from './firebaseSync';
+import { verifyAdminPassword } from './adminAuth';
 import './App.css';
 
 function App() {
@@ -13,6 +14,7 @@ function App() {
   const [templates, setTemplates] = useState<ItemTemplate[]>(loadItemTemplates);
   const [syncCode, setSyncCode] = useState<string | null>(getSyncCode());
   const [showSyncModal, setShowSyncModal] = useState<'generate' | 'enter' | null>(null);
+  const [showDisconnectModal, setShowDisconnectModal] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const firebaseConfigured = isFirebaseConfigured();
 
@@ -29,12 +31,23 @@ function App() {
     if (!syncCode || !firebaseConfigured) return;
 
     setIsSyncing(true);
-    const unsubscribe = subscribeToSync(syncCode, ({ freezerData: newFreezerData, templates: newTemplates }) => {
-      setFreezerData(newFreezerData);
-      setTemplates(newTemplates);
-      saveFreezerData(newFreezerData);
-      saveItemTemplates(newTemplates);
-    });
+    const unsubscribe = subscribeToSync(
+      syncCode, 
+      ({ freezerData: newFreezerData, templates: newTemplates }) => {
+        setFreezerData(newFreezerData);
+        setTemplates(newTemplates);
+        saveFreezerData(newFreezerData);
+        saveItemTemplates(newTemplates);
+      },
+      () => {
+        // Callback když je kód invalidován
+        alert('⚠️ Synchronizační kód již není platný!\n\nAdmin změnil synchronizační kód. Budete odpojeni a můžete zadat nový kód.');
+        clearSyncCode();
+        setSyncCode(null);
+        setIsSyncing(false);
+        setShowSyncModal('enter');
+      }
+    );
 
     return () => unsubscribe();
   }, [syncCode, firebaseConfigured]);
@@ -118,7 +131,12 @@ function App() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleGenerateSync = (code: string) => {
+  const handleGenerateSync = async (code: string) => {
+    // Pokud už máme starý kód, invalidujeme ho
+    if (syncCode && firebaseConfigured) {
+      await invalidateSyncCode(syncCode);
+    }
+    
     saveSyncCode(code);
     setSyncCode(code);
     setShowSyncModal(null);
@@ -134,11 +152,24 @@ function App() {
   };
 
   const handleDisconnectSync = () => {
-    if (confirm('Opravdu chcete odpojit synchronizaci? Data zůstanou uložená lokálně.')) {
-      clearSyncCode();
-      setSyncCode(null);
-      setIsSyncing(false);
+    setShowDisconnectModal(true);
+  };
+
+  const handleConfirmDisconnect = async (password: string) => {
+    if (!verifyAdminPassword(password)) {
+      return false;
     }
+    
+    // Invalidujeme kód pro ostatní uživatele
+    if (syncCode && firebaseConfigured) {
+      await invalidateSyncCode(syncCode);
+    }
+    
+    clearSyncCode();
+    setSyncCode(null);
+    setIsSyncing(false);
+    setShowDisconnectModal(false);
+    return true;
   };
 
   const handleExport = () => {
@@ -216,6 +247,13 @@ function App() {
           onEnter={handleEnterSync}
         />
       )}
+
+      {showDisconnectModal && (
+        <DisconnectModal
+          onClose={() => setShowDisconnectModal(false)}
+          onConfirm={handleConfirmDisconnect}
+        />
+      )}
       
       <TemplatesManager
         templates={templates}
@@ -244,6 +282,92 @@ function App() {
         onDeleteItem={(drawerId, itemId) => handleDeleteItem('large', drawerId, itemId)}
       />
     </>
+  );
+}
+
+function DisconnectModal({ onClose, onConfirm }: { onClose: () => void; onConfirm: (password: string) => Promise<boolean> }) {
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const handleConfirm = async () => {
+    if (!password) {
+      setError('Zadejte admin heslo');
+      return;
+    }
+
+    setIsProcessing(true);
+    const success = await onConfirm(password);
+    setIsProcessing(false);
+
+    if (!success) {
+      setError('Nesprávné admin heslo!');
+    }
+  };
+
+  return (
+    <div className="sync-modal-overlay" onClick={onClose}>
+      <div className="sync-modal" onClick={(e) => e.stopPropagation()}>
+        <h2>🚫 Odpojit synchronizaci</h2>
+        <p>
+          Zadejte admin heslo pro potvrzení odpojení.<br/>
+          Ostatní uživatelé budou také odpojeni a budou muset zadat nový sync kód.
+        </p>
+        
+        <div className="form-field">
+          <label>Admin heslo:</label>
+          <div style={{ position: 'relative' }}>
+            <input
+              type={showPassword ? 'text' : 'password'}
+              value={password}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                setError('');
+              }}
+              placeholder="Zadejte heslo"
+              autoFocus
+              style={{ paddingRight: '3rem' }}
+              onKeyDown={(e) => e.key === 'Enter' && handleConfirm()}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              style={{
+                position: 'absolute',
+                right: '0.5rem',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: '1.2em',
+                padding: '0.25rem 0.5rem'
+              }}
+              title={showPassword ? 'Skrýt heslo' : 'Zobrazit heslo'}
+            >
+              {showPassword ? '👁️' : '👁️‍🗨️'}
+            </button>
+          </div>
+          {error && (
+            <p style={{ color: '#f44336', fontSize: '0.9em', margin: '0.5rem 0 0 0' }}>
+              {error}
+            </p>
+          )}
+        </div>
+
+        <div className="sync-modal-actions">
+          <button onClick={onClose} disabled={isProcessing}>Zrušit</button>
+          <button 
+            onClick={handleConfirm}
+            disabled={!password || isProcessing}
+            style={{ backgroundColor: '#f44336' }}
+          >
+            {isProcessing ? 'Odpojuji...' : 'Odpojit'}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
