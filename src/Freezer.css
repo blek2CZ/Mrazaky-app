@@ -6,6 +6,18 @@
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
 }
 
+@media (max-width: 768px) {
+  .freezer {
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+  }
+
+  .freezer h2 {
+    font-size: 1.3em;
+  }
+}
+
 .freezer h2 {
   margin-top: 0;
   margin-bottom: 1rem;
@@ -117,6 +129,50 @@
   font-size: 0.9em;
 }
 
+@media (max-width: 768px) {
+  .drawer {
+    padding: 0.75rem;
+  }
+
+  .drawer-header h3 {
+    font-size: 1em;
+  }
+
+  .drawer-title {
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .item-count {
+    font-size: 0.85em;
+  }
+
+  .toggle-drawer-button {
+    min-width: 30px;
+    padding: 0.25em 0.4em;
+  }
+
+  .item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .item-info {
+    width: 100%;
+  }
+
+  .item-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .item-actions button {
+    padding: 0.4em 0.8em;
+    flex: 0 0 auto;
+  }
+}
+
 .add-item-form {
   margin-top: 1rem;
   padding: 1rem;
@@ -154,6 +210,25 @@
 
 .quantity-input {
   width: 80px;
+}
+
+@media (max-width: 768px) {
+  .add-item-form {
+    padding: 0.75rem;
+  }
+
+  .form-row {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .form-row button {
+    width: 100%;
+  }
+
+  .quantity-input {
+    width: 100%;
+  }
 }
 
 @media (prefers-color-scheme: light) {

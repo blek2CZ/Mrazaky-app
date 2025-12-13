@@ -4,6 +4,7 @@ import TemplatesManager from './TemplatesManager';
 import { FreezerData, Item, ItemTemplate } from './types';
 import { loadFreezerData, saveFreezerData, loadItemTemplates, saveItemTemplates } from './storage';
 import { exportData, importData } from './dataSync';
+import './App.css';
 
 function App() {
   const [freezerData, setFreezerData] = useState<FreezerData>(loadFreezerData);
@@ -116,9 +117,9 @@ function App() {
 
   return (
     <>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-        <h1 style={{ margin: 0 }}>🧊 Evidence mrazáků</h1>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
+      <div className="app-header">
+        <h1>🧊 Evidence mrazáků</h1>
+        <div className="app-actions">
           <button onClick={handleExport} title="Stáhnout zálohu dat">📥 Exportovat data</button>
           <button onClick={handleImportClick} title="Nahrát data ze zálohy">📤 Importovat data</button>
           <input

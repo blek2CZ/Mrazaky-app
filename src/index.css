@@ -39,6 +39,33 @@ h1 {
   text-align: center;
 }
 
+@media (max-width: 768px) {
+  body {
+    min-height: 100vh;
+    place-items: flex-start;
+  }
+
+  #root {
+    padding: 1rem;
+    max-width: 100%;
+  }
+
+  h1 {
+    font-size: 1.5em;
+    margin-bottom: 1rem;
+  }
+
+  button {
+    padding: 0.5em 0.8em;
+    font-size: 0.9em;
+    white-space: nowrap;
+  }
+
+  input, select {
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+}
+
 button {
   border-radius: 8px;
   border: 1px solid transparent;
