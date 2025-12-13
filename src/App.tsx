@@ -179,6 +179,12 @@ function App() {
     setSyncCode(null);
     setIsSyncing(false);
     setShowDisconnectModal(false);
+    
+    // Po odpojení nabídneme vytvoření nového kódu
+    setTimeout(() => {
+      setShowSyncModal('generate');
+    }, 500);
+    
     return true;
   };
 
@@ -223,12 +229,11 @@ function App() {
                   <span className="sync-indicator"></span>
                   Sync: {syncCode}
                 </div>
-                <button onClick={handleDisconnectSync} title="Odpojit synchronizaci">🚫 Odpojit</button>
+                <button onClick={handleDisconnectSync} title="Odpojit a změnit synchronizaci">🚫 Odpojit</button>
               </>
             ) : (
               <>
-                <button onClick={() => setShowSyncModal('generate')} title="Vytvořit nový synchronizační kód">🔄 Nový sync kód</button>
-                <button onClick={() => setShowSyncModal('enter')} title="Zadat existující kód">🔑 Zadat kód</button>
+                <button onClick={() => setShowSyncModal('enter')} title="Zadat existující synchronizační kód">🔑 Zadat kód</button>
               </>
             )
           ) : (
@@ -323,7 +328,9 @@ function DisconnectModal({ onClose, onConfirm }: { onClose: () => void; onConfir
         <h2>🚫 Odpojit synchronizaci</h2>
         <p>
           Zadejte admin heslo pro potvrzení odpojení.<br/>
-          Ostatní uživatelé budou také odpojeni a budou muset zadat nový sync kód.
+          Ostatní uživatelé budou také odpojeni a budou muset zadat nový sync kód.<br/>
+          <br/>
+          <strong>Po odpojení můžete vytvořit nový sync kód.</strong>
         </p>
         
         <div className="form-field">
