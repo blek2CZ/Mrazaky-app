@@ -17,6 +17,7 @@ function App() {
   const [showDisconnectModal, setShowDisconnectModal] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [openSection, setOpenSection] = useState<string | null>(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [lastModified, setLastModified] = useState<number>(() => {
     const stored = localStorage.getItem('mrazaky-lastModified');
     return stored ? parseInt(stored) : Date.now();
@@ -49,6 +50,25 @@ function App() {
         syncCode, 
         ({ freezerData: newFreezerData, templates: newTemplates, lastModified: serverTimestamp }) => {
           console.log('☁️ Přijata data z Firebase, timestamp:', new Date(serverTimestamp).toISOString());
+          // Migrace dat - přidej smallMama, pokud neexistuje
+          if (!newFreezerData.smallMama) {
+            newFreezerData.smallMama = { 1: [] };
+          }
+          
+          // Upozorni uživatele, pokud má neuložené změny
+          if (hasUnsavedChanges && initialSyncDone.current) {
+            const confirm = window.confirm(
+              '⚠️ Někdo jiný změnil data v cloudu!\n\n' +
+              'Máte neuložené lokální změny. Co chcete udělat?\n\n' +
+              'OK = Načíst data z cloudu (ztratíte lokální změny)\n' +
+              'Zrušit = Ponechat lokální data'
+            );
+            if (!confirm) {
+              return; // Ponechat lokální data
+            }
+            setHasUnsavedChanges(false);
+          }
+          
           setFreezerData(newFreezerData);
           setTemplates(newTemplates);
           setLastModified(serverTimestamp);
@@ -57,7 +77,7 @@ function App() {
           // Označ, že první sync proběhl
           if (!initialSyncDone.current) {
             initialSyncDone.current = true;
-            console.log('✅ První synchronizace dokončena - auto-sync aktivován');
+            console.log('✅ První synchronizace dokončena');
           }
         },
         () => {
@@ -118,6 +138,10 @@ function App() {
             syncCode,
             ({ freezerData: newFreezerData, templates: newTemplates, lastModified: serverTimestamp }) => {
               console.log('☁️ Přijata data z Firebase, timestamp:', new Date(serverTimestamp).toISOString());
+              // Migrace dat - přidej smallMama, pokud neexistuje
+              if (!newFreezerData.smallMama) {
+                newFreezerData.smallMama = { 1: [] };
+              }
               setFreezerData(newFreezerData);
               setTemplates(newTemplates);
               setLastModified(serverTimestamp);
@@ -141,6 +165,10 @@ function App() {
             syncCode,
             ({ freezerData: newFreezerData, templates: newTemplates, lastModified: serverTimestamp }) => {
               console.log('☁️ Přijata data z Firebase, timestamp:', new Date(serverTimestamp).toISOString());
+              // Migrace dat - přidej smallMama, pokud neexistuje
+              if (!newFreezerData.smallMama) {
+                newFreezerData.smallMama = { 1: [] };
+              }
               setFreezerData(newFreezerData);
               setTemplates(newTemplates);
               setLastModified(serverTimestamp);
@@ -168,19 +196,28 @@ function App() {
     }
   }, [freezerData, templates, syncCode, isSyncing, firebaseConfigured]);
 
-  const handleAddItem = async (freezerType: 'small' | 'large', drawerId: number, item: Item) => {
-    // Odpoj listener před změnou aby nedošlo k race condition
-    if (unsubscribeRef.current) {
-      unsubscribeRef.current();
-      unsubscribeRef.current = null;
-    }
+  // Manuální sync funkce
+  const handleManualSync = async () => {
+    if (!syncCode || !firebaseConfigured || !hasUnsavedChanges) return;
     
-    // Zruš případný pending timeout
-    if (syncTimeoutRef.current) {
-      clearTimeout(syncTimeoutRef.current);
+    try {
+      const newTimestamp = Date.now();
+      const result = await syncDataToFirebase(syncCode, freezerData, templates, newTimestamp);
+      
+      if (result.success && result.serverTimestamp) {
+        setLastModified(result.serverTimestamp);
+        setHasUnsavedChanges(false);
+        console.log('✅ Data úspěšně odeslána do cloudu');
+      } else if (!result.success) {
+        alert(`❌ Nepodařilo se odeslat data:\n\n${result.reason}\n\nNačtou se aktuální data z cloudu.`);
+      }
+    } catch (error) {
+      console.error('Chyba při odesílání do Firebase:', error);
+      alert('❌ Chyba při odesílání dat do cloudu!');
     }
-    
-    // Ihned aktualizuj localStorage jako zálohu
+  };
+
+  const handleAddItem = async (freezerType: 'small' | 'large' | 'smallMama', drawerId: number, item: Item) => {
     const newFreezerData = {
       ...freezerData,
       [freezerType]: {
@@ -189,79 +226,25 @@ function App() {
       },
     };
     saveFreezerData(newFreezerData);
-    
     setFreezerData(newFreezerData);
+    setHasUnsavedChanges(true);
 
     // Pokud je to nová položka (custom), přidej do templates
-    let newTemplates = templates;
     if (!templates.find(t => t.name === item.name)) {
       const newTemplate: ItemTemplate = {
         id: Date.now().toString(),
         name: item.name,
       };
-      newTemplates = [...templates, newTemplate];
+      const newTemplates = [...templates, newTemplate];
       saveItemTemplates(newTemplates);
       setTemplates(newTemplates);
     }
-    
-    // Hned uložíme do Firebase a počkáme na potvrzení
-    if (syncCode && firebaseConfigured) {
-      try {
-        const newTimestamp = Date.now();
-        const result = await syncDataToFirebase(syncCode, newFreezerData, newTemplates, newTimestamp);
-        if (result.success && result.serverTimestamp) {
-          setLastModified(result.serverTimestamp);
-        } else if (!result.success) {
-          alert(result.reason);
-          return; // Nepokračuj, listener načte aktuální data
-        }
-      } catch (error) {
-        console.error('Chyba při ukládání do Firebase:', error);
-      }
-    }
-    
-    // Znovu připoj listener po úspěšném uložení
-    if (syncCode && firebaseConfigured) {
-      setTimeout(() => {
-        if (!unsubscribeRef.current) {
-          const newUnsubscribe = subscribeToSync(
-            syncCode,
-            ({ freezerData: newFreezerData, templates: newTemplates, lastModified: serverTimestamp }) => {
-              setFreezerData(newFreezerData);
-              setTemplates(newTemplates);
-              setLastModified(serverTimestamp);
-              saveFreezerData(newFreezerData);
-              saveItemTemplates(newTemplates);
-            },
-            () => {
-              alert('⚠️ Synchronizační kód již není platný!\n\nAdmin změnil synchronizační kód. Budete odpojeni a můžete zadat nový kód.');
-              initialSyncDone.current = false;
-              clearSyncCode();
-              setSyncCode(null);
-              setIsSyncing(false);
-              setShowSyncModal('enter');
-            }
-          );
-          unsubscribeRef.current = newUnsubscribe;
-        }
-      }, 100);
-    }
   };
 
-  const handleUpdateItem = async (freezerType: 'small' | 'large', drawerId: number, itemId: string, quantity: number) => {
+  const handleUpdateItem = async (freezerType: 'small' | 'large' | 'smallMama', drawerId: number, itemId: string, quantity: number) => {
     if (quantity <= 0) {
       await handleDeleteItem(freezerType, drawerId, itemId);
       return;
-    }
-
-    // Odpoj listener před změnou
-    if (unsubscribeRef.current) {
-      unsubscribeRef.current();
-      unsubscribeRef.current = null;
-    }
-    
-    if (syncTimeoutRef.current) {
-      clearTimeout(syncTimeoutRef.current);
     }
 
     const newFreezerData = {
@@ -276,61 +259,10 @@ function App() {
     
     saveFreezerData(newFreezerData);
     setFreezerData(newFreezerData);
-    
-    // Uložíme do Firebase a počkáme na potvrzení
-    if (syncCode && firebaseConfigured) {
-      try {
-        const newTimestamp = Date.now();
-        const result = await syncDataToFirebase(syncCode, newFreezerData, templates, newTimestamp);
-        if (result.success && result.serverTimestamp) {
-          setLastModified(result.serverTimestamp);
-        } else if (!result.success) {
-          alert(result.reason);
-          return;
-        }
-      } catch (error) {
-        console.error('Chyba při ukládání do Firebase:', error);
-      }
-    }
-    
-    // Znovu připoj listener
-    if (syncCode && firebaseConfigured) {
-      setTimeout(() => {
-        if (!unsubscribeRef.current) {
-          const newUnsubscribe = subscribeToSync(
-            syncCode,
-            ({ freezerData: newFreezerData, templates: newTemplates, lastModified: serverTimestamp }) => {
-              setFreezerData(newFreezerData);
-              setTemplates(newTemplates);
-              setLastModified(serverTimestamp);
-              saveFreezerData(newFreezerData);
-              saveItemTemplates(newTemplates);
-            },
-            () => {
-              alert('⚠️ Synchronizační kód již není platný!\n\nAdmin změnil synchronizační kód. Budete odpojeni a můžete zadat nový kód.');
-              initialSyncDone.current = false;
-              clearSyncCode();
-              setSyncCode(null);
-              setIsSyncing(false);
-              setShowSyncModal('enter');
-            }
-          );
-          unsubscribeRef.current = newUnsubscribe;
-        }
-      }, 100);
-    }
+    setHasUnsavedChanges(true);
   };
 
-  const handleDeleteItem = async (freezerType: 'small' | 'large', drawerId: number, itemId: string) => {
-    // Odpoj listener před změnou
-    if (unsubscribeRef.current) {
-      unsubscribeRef.current();
-      unsubscribeRef.current = null;
-    }
-    
-    if (syncTimeoutRef.current) {
-      clearTimeout(syncTimeoutRef.current);
-    }
+  const handleDeleteItem = async (freezerType: 'small' | 'large' | 'smallMama', drawerId: number, itemId: string) => {
 
     const newFreezerData = {
       ...freezerData,
@@ -342,47 +274,7 @@ function App() {
     
     saveFreezerData(newFreezerData);
     setFreezerData(newFreezerData);
-    
-    // Uložíme do Firebase a počkáme na potvrzení
-    if (syncCode && firebaseConfigured) {
-      try {
-        const newTimestamp = Date.now();
-        const result = await syncDataToFirebase(syncCode, newFreezerData, templates, newTimestamp);
-        if (result.success && result.serverTimestamp) {
-          setLastModified(result.serverTimestamp);
-        } else if (!result.success) {
-          alert(result.reason);
-          return;
-        }
-      } catch (error) {
-        console.error('Chyba při ukládání do Firebase:', error);
-      }
-    }
-    
-    // Znovu připoj listener
-    if (syncCode && firebaseConfigured) {
-      setTimeout(() => {
-        if (!unsubscribeRef.current) {
-          const newUnsubscribe = subscribeToSync(
-            syncCode,
-            ({ freezerData: newFreezerData, templates: newTemplates }) => {
-              setFreezerData(newFreezerData);
-              setTemplates(newTemplates);
-              saveFreezerData(newFreezerData);
-              saveItemTemplates(newTemplates);
-            },
-            () => {
-              alert('⚠️ Synchronizační kód již není platný!\n\nAdmin změnil synchronizační kód. Budete odpojeni a můžete zadat nový kód.');
-              clearSyncCode();
-              setSyncCode(null);
-              setIsSyncing(false);
-              setShowSyncModal('enter');
-            }
-          );
-          unsubscribeRef.current = newUnsubscribe;
-        }
-      }, 100);
-    }
+    setHasUnsavedChanges(true);
   };
 
   const handleAddTemplate = (name: string) => {
@@ -413,20 +305,27 @@ function App() {
           drawerId,
           items.map((item: Item) => item.name === oldName ? { ...item, name: newName } : item)
         ])
+      ) as { [drawerId: number]: Item[] },
+      smallMama: Object.fromEntries(
+        Object.entries(freezerData.smallMama).map(([drawerId, items]) => [
+          drawerId,
+          items.map((item: Item) => item.name === oldName ? { ...item, name: newName } : item)
+        ])
       ) as { [drawerId: number]: Item[] }
     };
     
     setFreezerData(newFreezerData);
+    setHasUnsavedChanges(true);
     
     // Aktualizuj template se stejným názvem
     setTemplates(prev => prev.map(t => t.name === oldName ? { ...t, name: newName } : t));
   };
 
   const handleMoveItem = async (
-    sourceFreezerType: 'small' | 'large',
+    sourceFreezerType: 'small' | 'large' | 'smallMama',
     sourceDrawerId: number, 
     itemId: string, 
-    targetFreezer: 'small' | 'large', 
+    targetFreezer: 'small' | 'large' | 'smallMama', 
     targetDrawer: number
   ) => {
     console.log('=== PŘESUN POLOŽKY - START ===');
@@ -442,19 +341,7 @@ function App() {
     }
     console.log('✓ Položka nalezena:', sourceItem.name, `(${sourceItem.quantity} ks)`);
 
-    // KROK 2: Odpoj listener před změnou
-    if (unsubscribeRef.current) {
-      unsubscribeRef.current();
-      unsubscribeRef.current = null;
-      console.log('✓ Firebase listener odpojen');
-    }
-    
-    if (syncTimeoutRef.current) {
-      clearTimeout(syncTimeoutRef.current);
-      console.log('✓ Timeout zrušen');
-    }
-
-    // KROK 3: Deep copy všech dat (IMMUTABLE)
+    // KROK 2: Deep copy všech dat (IMMUTABLE)
     console.log('📋 Vytváření kopie všech dat...');
     const newFreezerData: FreezerData = {
       small: Object.fromEntries(
@@ -462,6 +349,9 @@ function App() {
       ) as { [drawerId: number]: Item[] },
       large: Object.fromEntries(
         Object.entries(freezerData.large).map(([id, items]) => [id, [...items]])
+      ) as { [drawerId: number]: Item[] },
+      smallMama: Object.fromEntries(
+        Object.entries(freezerData.smallMama).map(([id, items]) => [id, [...items]])
       ) as { [drawerId: number]: Item[] }
     };
     console.log('✓ Kopie vytvořena');
@@ -469,7 +359,8 @@ function App() {
     // KROK 4: Kontrola - počet položek před změnou
     const totalItemsBefore = 
       Object.values(newFreezerData.small).flat().length + 
-      Object.values(newFreezerData.large).flat().length;
+      Object.values(newFreezerData.large).flat().length +
+      Object.values(newFreezerData.smallMama).flat().length;
     console.log('📊 Celkem položek před změnou:', totalItemsBefore);
     
     // KROK 5: PŘIDEJ DO CÍLE (priorita - nejdřív přidat)
@@ -512,7 +403,8 @@ function App() {
     // KROK 9: Kontrola - celkový počet položek (musí zůstat stejný)
     const totalItemsAfter = 
       Object.values(newFreezerData.small).flat().length + 
-      Object.values(newFreezerData.large).flat().length;
+      Object.values(newFreezerData.large).flat().length +
+      Object.values(newFreezerData.smallMama).flat().length;
     console.log('📊 Celkem položek po změně:', totalItemsAfter);
     
     if (totalItemsBefore !== totalItemsAfter) {
@@ -530,56 +422,8 @@ function App() {
     console.log('💾 Ukládání do localStorage...');
     saveFreezerData(newFreezerData);
     setFreezerData(newFreezerData);
+    setHasUnsavedChanges(true);
     console.log('✓ Uloženo do localStorage');
-    
-    // KROK 11: Ulož do Firebase
-    if (syncCode && firebaseConfigured) {
-      console.log('☁️ Ukládání do Firebase...');
-      try {
-        const newTimestamp = Date.now();
-        const result = await syncDataToFirebase(syncCode, newFreezerData, templates, newTimestamp);
-        if (result.success && result.serverTimestamp) {
-          setLastModified(result.serverTimestamp);
-          console.log('✓ Uloženo do Firebase');
-        } else if (!result.success) {
-          alert(result.reason);
-          return; // Listener načte aktuální data
-        }
-      } catch (error) {
-        console.error('❌ Chyba při ukládání do Firebase:', error);
-        alert('Varování: Data uložena lokálně, ale Firebase sync selhal!');
-      }
-    }
-    
-    // KROK 12: Znovu připoj listener
-    if (syncCode && firebaseConfigured) {
-      setTimeout(() => {
-        if (!unsubscribeRef.current) {
-          const newUnsubscribe = subscribeToSync(
-            syncCode,
-            ({ freezerData: newFreezerData, templates: newTemplates, lastModified: serverTimestamp }) => {
-              console.log('☁️ Přijata data z Firebase, timestamp:', new Date(serverTimestamp).toISOString());
-              setFreezerData(newFreezerData);
-              setTemplates(newTemplates);
-              setLastModified(serverTimestamp);
-              saveFreezerData(newFreezerData);
-              saveItemTemplates(newTemplates);
-            },
-            () => {
-              alert('⚠️ Synchronizační kód již není platný!\n\nAdmin změnil synchronizační kód. Budete odpojeni a můžete zadat nový kód.');
-              initialSyncDone.current = false;
-              clearSyncCode();
-              setSyncCode(null);
-              setIsSyncing(false);
-              setShowSyncModal('enter');
-            }
-          );
-          unsubscribeRef.current = newUnsubscribe;
-          console.log('✓ Firebase listener připojen');
-        }
-      }, 100);
-    }
-    
     console.log('=== PŘESUN POLOŽKY - DOKONČENO ✓ ===');
   };
 
@@ -591,6 +435,7 @@ function App() {
     const allItems = [
       ...Object.values(freezerData.small).flat(),
       ...Object.values(freezerData.large).flat(),
+      ...Object.values(freezerData.smallMama).flat(),
     ];
     return allItems.some(item => item.name === name);
   };
@@ -739,6 +584,10 @@ function App() {
                 syncCode,
                 ({ freezerData: newFreezerData, templates: newTemplates, lastModified: serverTimestamp }) => {
                   console.log('☁️ Přijata data z Firebase, timestamp:', new Date(serverTimestamp).toISOString());
+                  // Migrace dat - přidej smallMama, pokud neexistuje
+                  if (!newFreezerData.smallMama) {
+                    newFreezerData.smallMama = { 1: [] };
+                  }
                   setFreezerData(newFreezerData);
                   setTemplates(newTemplates);
                   setLastModified(serverTimestamp);
@@ -829,6 +678,36 @@ function App() {
           onConfirm={handleConfirmDisconnect}
         />
       )}
+
+      {isSyncing && hasUnsavedChanges && (
+        <div style={{
+          position: 'fixed',
+          bottom: '20px',
+          right: '20px',
+          zIndex: 1000
+        }}>
+          <button
+            onClick={handleManualSync}
+            style={{
+              padding: '15px 30px',
+              fontSize: '16px',
+              fontWeight: 'bold',
+              backgroundColor: '#4CAF50',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              boxShadow: '0 4px 8px rgba(0,0,0,0.3)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px'
+            }}
+          >
+            <span style={{ fontSize: '20px' }}>☁️</span>
+            <span>Odeslat změny do cloudu</span>
+          </button>
+        </div>
+      )}
       
       <TemplatesManager
         templates={templates}
@@ -847,7 +726,8 @@ function App() {
         drawers={freezerData.small}
         allDrawersFromBothFreezers={{
           ...Object.fromEntries(Object.entries(freezerData.small).map(([id, items]) => [`small-${id}`, items])),
-          ...Object.fromEntries(Object.entries(freezerData.large).map(([id, items]) => [`large-${id}`, items]))
+          ...Object.fromEntries(Object.entries(freezerData.large).map(([id, items]) => [`large-${id}`, items])),
+          ...Object.fromEntries(Object.entries(freezerData.smallMama).map(([id, items]) => [`smallMama-${id}`, items]))
         }}
         templates={templates}
         onAddItem={(drawerId, item) => handleAddItem('small', drawerId, item)}
@@ -857,7 +737,7 @@ function App() {
         onMoveItem={(sourceDrawerId, itemId, targetFreezer, targetDrawer) => 
           handleMoveItem('small', sourceDrawerId, itemId, targetFreezer, targetDrawer)
         }
-        totalDrawers={{ small: 3, large: 7 }}
+        totalDrawers={{ small: 3, large: 7, smallMama: 1 }}
         openDrawerId={openSection?.startsWith('small-') ? openSection : null}
         onToggleDrawer={(drawerId) => {
           const sectionId = `small-${drawerId}`;
@@ -872,7 +752,8 @@ function App() {
         drawers={freezerData.large}
         allDrawersFromBothFreezers={{
           ...Object.fromEntries(Object.entries(freezerData.small).map(([id, items]) => [`small-${id}`, items])),
-          ...Object.fromEntries(Object.entries(freezerData.large).map(([id, items]) => [`large-${id}`, items]))
+          ...Object.fromEntries(Object.entries(freezerData.large).map(([id, items]) => [`large-${id}`, items])),
+          ...Object.fromEntries(Object.entries(freezerData.smallMama).map(([id, items]) => [`smallMama-${id}`, items]))
         }}
         templates={templates}
         onAddItem={(drawerId, item) => handleAddItem('large', drawerId, item)}
@@ -882,10 +763,36 @@ function App() {
         onMoveItem={(sourceDrawerId, itemId, targetFreezer, targetDrawer) => 
           handleMoveItem('large', sourceDrawerId, itemId, targetFreezer, targetDrawer)
         }
-        totalDrawers={{ small: 3, large: 7 }}
+        totalDrawers={{ small: 3, large: 7, smallMama: 1 }}
         openDrawerId={openSection?.startsWith('large-') ? openSection : null}
         onToggleDrawer={(drawerId) => {
           const sectionId = `large-${drawerId}`;
+          setOpenSection(openSection === sectionId ? null : sectionId);
+        }}
+      />
+
+      <Freezer
+        title="Malý mama"
+        drawerCount={1}
+        freezerType="smallMama"
+        drawers={freezerData.smallMama}
+        allDrawersFromBothFreezers={{
+          ...Object.fromEntries(Object.entries(freezerData.small).map(([id, items]) => [`small-${id}`, items])),
+          ...Object.fromEntries(Object.entries(freezerData.large).map(([id, items]) => [`large-${id}`, items])),
+          ...Object.fromEntries(Object.entries(freezerData.smallMama).map(([id, items]) => [`smallMama-${id}`, items]))
+        }}
+        templates={templates}
+        onAddItem={(drawerId, item) => handleAddItem('smallMama', drawerId, item)}
+        onUpdateItem={(drawerId, itemId, quantity) => handleUpdateItem('smallMama', drawerId, itemId, quantity)}
+        onDeleteItem={(drawerId, itemId) => handleDeleteItem('smallMama', drawerId, itemId)}
+        onEditItem={handleEditItemName}
+        onMoveItem={(sourceDrawerId, itemId, targetFreezer, targetDrawer) => 
+          handleMoveItem('smallMama', sourceDrawerId, itemId, targetFreezer, targetDrawer)
+        }
+        totalDrawers={{ small: 3, large: 7, smallMama: 1 }}
+        openDrawerId={openSection?.startsWith('smallMama-') ? openSection : null}
+        onToggleDrawer={(drawerId) => {
+          const sectionId = `smallMama-${drawerId}`;
           setOpenSection(openSection === sectionId ? null : sectionId);
         }}
       />

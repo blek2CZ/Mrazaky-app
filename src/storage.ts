@@ -6,11 +6,17 @@ const STORAGE_KEY_TEMPLATES = 'mrazaky-templates';
 export const loadFreezerData = (): FreezerData => {
   const stored = localStorage.getItem(STORAGE_KEY_FREEZERS);
   if (stored) {
-    return JSON.parse(stored);
+    const data = JSON.parse(stored);
+    // Migrace starých dat - přidej smallMama, pokud neexistuje
+    if (!data.smallMama) {
+      data.smallMama = { 1: [] };
+    }
+    return data;
   }
   return {
     small: { 1: [], 2: [], 3: [] },
     large: { 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [] },
+    smallMama: { 1: [] },
   };
 };
 

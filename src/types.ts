@@ -11,6 +11,7 @@ export interface DrawerContent {
 export interface FreezerData {
   small: DrawerContent;
   large: DrawerContent;
+  smallMama: DrawerContent;
 }
 
 export interface ItemTemplate {

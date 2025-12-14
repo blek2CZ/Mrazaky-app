@@ -11,9 +11,9 @@ interface DrawerProps {
   onUpdateItem: (drawerId: number, itemId: string, quantity: number) => void;
   onDeleteItem: (drawerId: number, itemId: string) => void;
   onEditItem: (oldName: string, newName: string) => void;
-  onMoveItem: (itemId: string, targetFreezer: 'small' | 'large', targetDrawer: number) => void;
+  onMoveItem: (itemId: string, targetFreezer: 'small' | 'large' | 'smallMama', targetDrawer: number) => void;
   freezerType: string;
-  totalDrawers: { small: number; large: number };
+  totalDrawers: { small: number; large: number; smallMama: number };
   isExpanded: boolean;
   onToggle: () => void;
 }
@@ -227,6 +227,17 @@ function Drawer({ drawerId, items, templates, allDrawers, onAddItem, onUpdateIte
                                 </option>
                               ))}
                             </optgroup>
+                            <optgroup label="Malý mama">
+                              {Array.from({ length: totalDrawers.smallMama }, (_, i) => i + 1).map(d => (
+                                <option 
+                                  key={`smallMama-${d}`} 
+                                  value={`smallMama-${d}`}
+                                  disabled={freezerType === 'smallMama' && d === drawerId}
+                                >
+                                  Šuplík {d}
+                                </option>
+                              ))}
+                            </optgroup>
                           </select>
                           <button
                             onClick={() => setMovingItemId(null)}
@@ -304,8 +315,8 @@ interface FreezerProps {
   onUpdateItem: (drawerId: number, itemId: string, quantity: number) => void;
   onDeleteItem: (drawerId: number, itemId: string) => void;
   onEditItem: (oldName: string, newName: string) => void;
-  onMoveItem: (sourceDrawerId: number, itemId: string, targetFreezer: 'small' | 'large', targetDrawer: number) => void;
-  totalDrawers: { small: number; large: number };
+  onMoveItem: (sourceDrawerId: number, itemId: string, targetFreezer: 'small' | 'large' | 'smallMama', targetDrawer: number) => void;
+  totalDrawers: { small: number; large: number; smallMama: number };
   openDrawerId: string | null;
   onToggleDrawer: (drawerId: number) => void;
 }
