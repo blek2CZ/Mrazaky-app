@@ -33,7 +33,7 @@ export default function TemplatesManager({ templates, onAddTemplate, onDeleteTem
         <>
           <div className="templates-list">
         {[...templates].sort((a, b) => a.name.localeCompare(b.name, 'cs')).map(template => (
-          <div key={template.id} className="template-item">
+          <div key={template.id} className={`template-item ${isTemplateUsed(template.name) ? 'template-used' : ''}`}>
             <span className="template-name">{template.name}</span>
             <div className="template-actions">
               <button
