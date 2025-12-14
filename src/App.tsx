@@ -16,6 +16,7 @@ function App() {
   const [showSyncModal, setShowSyncModal] = useState<'generate' | 'enter' | null>(null);
   const [showDisconnectModal, setShowDisconnectModal] = useState(false);
   const [showSyncConfirm, setShowSyncConfirm] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [openSection, setOpenSection] = useState<string | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -48,50 +49,65 @@ function App() {
     setIsSyncing(true);
     
     const setupListener = () => {
-      const unsubscribe = subscribeToSync(
-        syncCode, 
-        ({ freezerData: newFreezerData, templates: newTemplates, lastModified: serverTimestamp }) => {
-          console.log('☁️ Přijata data z Firebase, timestamp:', new Date(serverTimestamp).toISOString());
-          // Migrace dat - přidej smallMama, pokud neexistuje
-          if (!newFreezerData.smallMama) {
-            newFreezerData.smallMama = { 1: [] };
-          }
-          
-          // Upozorni uživatele, pokud má neuložené změny
-          if (hasUnsavedChanges && initialSyncDone.current) {
-            const confirm = window.confirm(
-              '⚠️ Někdo jiný změnil data v cloudu!\n\n' +
-              'Máte neuložené lokální změny. Co chcete udělat?\n\n' +
-              'OK = Načíst data z cloudu (ztratíte lokální změny)\n' +
-              'Zrušit = Ponechat lokální data'
-            );
-            if (!confirm) {
-              return; // Ponechat lokální data
+      try {
+        const unsubscribe = subscribeToSync(
+          syncCode, 
+          ({ freezerData: newFreezerData, templates: newTemplates, lastModified: serverTimestamp }) => {
+            try {
+              console.log('☁️ Přijata data z Firebase, timestamp:', new Date(serverTimestamp).toISOString());
+              // Migrace dat - přidej smallMama, pokud neexistuje
+              if (!newFreezerData.smallMama) {
+                newFreezerData.smallMama = { 1: [] };
+              }
+              
+              // Upozorni uživatele, pokud má neuložené změny
+              if (hasUnsavedChanges && initialSyncDone.current) {
+                const confirm = window.confirm(
+                  '⚠️ Někdo jiný změnil data v cloudu!\n\n' +
+                  'Máte neuložené lokální změny. Co chcete udělat?\n\n' +
+                  'OK = Načíst data z cloudu (ztratíte lokální změny)\n' +
+                  'Zrušit = Ponechat lokální data'
+                );
+                if (!confirm) {
+                  return; // Ponechat lokální data
+                }
+                setHasUnsavedChanges(false);
+                setChangeCount(0);
+              }
+              
+              setFreezerData(newFreezerData);
+              setTemplates(newTemplates);
+              setLastModified(serverTimestamp);
+              saveFreezerData(newFreezerData);
+              saveItemTemplates(newTemplates);
+              // Označ, že první sync proběhl
+              if (!initialSyncDone.current) {
+                initialSyncDone.current = true;
+                console.log('✅ První synchronizace dokončena');
+              }
+            } catch (error) {
+              console.error('❌ Chyba při zpracování dat z Firebase:', error);
+              setErrorMessage('Chyba při načítání dat z cloudu. Data mohou být neúplná.');
+              setTimeout(() => setErrorMessage(null), 5000);
             }
-            setHasUnsavedChanges(false);
+          },
+          () => {
+            // Callback když je kód invalidován
+            setErrorMessage('Synchronizační kód již není platný. Admin změnil kód.');
+            clearSyncCode();
+            setSyncCode(null);
+            setIsSyncing(false);
+            setShowSyncModal('enter');
+            setTimeout(() => setErrorMessage(null), 5000);
           }
-          
-          setFreezerData(newFreezerData);
-          setTemplates(newTemplates);
-          setLastModified(serverTimestamp);
-          saveFreezerData(newFreezerData);
-          saveItemTemplates(newTemplates);
-          // Označ, že první sync proběhl
-          if (!initialSyncDone.current) {
-            initialSyncDone.current = true;
-            console.log('✅ První synchronizace dokončena');
-          }
-        },
-        () => {
-          // Callback když je kód invalidován
-          alert('⚠️ Synchronizační kód již není platný!\n\nAdmin změnil synchronizační kód. Budete odpojeni a můžete zadat nový kód.');
-          clearSyncCode();
-          setSyncCode(null);
-          setIsSyncing(false);
-          setShowSyncModal('enter');
-        }
-      );
-      unsubscribeRef.current = unsubscribe;
+        );
+        unsubscribeRef.current = unsubscribe;
+      } catch (error) {
+        console.error('❌ Chyba při nastavení Firebase listeneru:', error);
+        setErrorMessage('Nepodařilo se připojit k synchronizaci. Zkontrolujte připojení k internetu.');
+        setIsSyncing(false);
+        setTimeout(() => setErrorMessage(null), 5000);
+      }
     };
     
     setupListener();
@@ -103,101 +119,6 @@ function App() {
     };
   }, [syncCode, firebaseConfigured]);
 
-  // Auto-sync when data changes
-  useEffect(() => {
-    // Neposílej data do Firebase dokud neproběhne první načtení dat z Firebase
-    if (syncCode && isSyncing && firebaseConfigured && initialSyncDone.current) {
-      // Zruš předchozí timeout pokud existuje
-      if (syncTimeoutRef.current) {
-        clearTimeout(syncTimeoutRef.current);
-      }
-      
-      syncTimeoutRef.current = setTimeout(async () => {
-        // Odpoj listener před zápisem
-        if (unsubscribeRef.current) {
-          unsubscribeRef.current();
-          unsubscribeRef.current = null;
-        }
-        
-        try {
-          // Ulož data do Firebase a počkej na potvrzení
-          const result = await syncDataToFirebase(syncCode, freezerData, templates, lastModified);
-          
-          // Pokud byl zápis odmítnut kvůli starším datům, načti aktuální verzi
-          if (!result.success) {
-            console.warn('⚠️ Auto-sync odmítnut:', result.reason);
-            // Listener automaticky načte aktuální data, nemusíme dělat nic
-            return;
-          }
-          
-          // Aktualizuj lokální timestamp po úspěšném zápisu
-          if (result.serverTimestamp) {
-            setLastModified(result.serverTimestamp);
-          }
-          
-          // Po úspěšném uložení znovu připoj listener
-          const newUnsubscribe = subscribeToSync(
-            syncCode,
-            ({ freezerData: newFreezerData, templates: newTemplates, lastModified: serverTimestamp }) => {
-              console.log('☁️ Přijata data z Firebase, timestamp:', new Date(serverTimestamp).toISOString());
-              // Migrace dat - přidej smallMama, pokud neexistuje
-              if (!newFreezerData.smallMama) {
-                newFreezerData.smallMama = { 1: [] };
-              }
-              setFreezerData(newFreezerData);
-              setTemplates(newTemplates);
-              setLastModified(serverTimestamp);
-              saveFreezerData(newFreezerData);
-              saveItemTemplates(newTemplates);
-            },
-            () => {
-              alert('⚠️ Synchronizační kód již není platný!\n\nAdmin změnil synchronizační kód. Budete odpojeni a můžete zadat nový kód.');
-              initialSyncDone.current = false;
-              clearSyncCode();
-              setSyncCode(null);
-              setIsSyncing(false);
-              setShowSyncModal('enter');
-            }
-          );
-          unsubscribeRef.current = newUnsubscribe;
-        } catch (error) {
-          console.error('Chyba při synchronizaci:', error);
-          // Při chybě znovu připoj listener
-          const newUnsubscribe = subscribeToSync(
-            syncCode,
-            ({ freezerData: newFreezerData, templates: newTemplates, lastModified: serverTimestamp }) => {
-              console.log('☁️ Přijata data z Firebase, timestamp:', new Date(serverTimestamp).toISOString());
-              // Migrace dat - přidej smallMama, pokud neexistuje
-              if (!newFreezerData.smallMama) {
-                newFreezerData.smallMama = { 1: [] };
-              }
-              setFreezerData(newFreezerData);
-              setTemplates(newTemplates);
-              setLastModified(serverTimestamp);
-              saveFreezerData(newFreezerData);
-              saveItemTemplates(newTemplates);
-            },
-            () => {
-              alert('⚠️ Synchronizační kód již není platný!');
-              initialSyncDone.current = false;
-              clearSyncCode();
-              setSyncCode(null);
-              setIsSyncing(false);
-              setShowSyncModal('enter');
-            }
-          );
-          unsubscribeRef.current = newUnsubscribe;
-        }
-      }, 800); // Debounce 800 ms
-      
-      return () => {
-        if (syncTimeoutRef.current) {
-          clearTimeout(syncTimeoutRef.current);
-        }
-      };
-    }
-  }, [freezerData, templates, syncCode, isSyncing, firebaseConfigured]);
-
   // Manuální sync funkce
   const handleManualSync = async () => {
     if (!syncCode || !firebaseConfigured || !hasUnsavedChanges) return;
@@ -207,9 +128,15 @@ function App() {
   const handleConfirmSync = async () => {
     setShowSyncConfirm(false);
     
+    if (!syncCode || !firebaseConfigured) {
+      setErrorMessage('Synchronizace není k dispozici. Zkontrolujte připojení.');
+      setTimeout(() => setErrorMessage(null), 5000);
+      return;
+    }
+    
     try {
       const newTimestamp = Date.now();
-      const result = await syncDataToFirebase(syncCode!, freezerData, templates, newTimestamp);
+      const result = await syncDataToFirebase(syncCode, freezerData, templates, newTimestamp);
       
       if (result.success && result.serverTimestamp) {
         setLastModified(result.serverTimestamp);
@@ -217,11 +144,15 @@ function App() {
         setChangeCount(0);
         console.log('✅ Data úspěšně odeslána do cloudu');
       } else if (!result.success) {
-        alert(`❌ Nepodařilo se odeslat data:\n\n${result.reason}\n\nNačtou se aktuální data z cloudu.`);
+        const errorMsg = result.reason || 'Neznámá chyba';
+        setErrorMessage(`Nepodařilo se odeslat data: ${errorMsg}`);
+        setTimeout(() => setErrorMessage(null), 7000);
       }
     } catch (error) {
-      console.error('Chyba při odesílání do Firebase:', error);
-      alert('❌ Chyba při odesílání dat do cloudu!');
+      console.error('❌ Chyba při odesílání do Firebase:', error);
+      const errorMsg = error instanceof Error ? error.message : 'Neznámá chyba';
+      setErrorMessage(`Chyba při odesílání dat: ${errorMsg}. Zkontrolujte připojení k internetu.`);
+      setTimeout(() => setErrorMessage(null), 7000);
     }
   };
 
@@ -690,6 +621,45 @@ function App() {
           onClose={() => setShowDisconnectModal(false)}
           onConfirm={handleConfirmDisconnect}
         />
+      )}
+      {errorMessage && (
+        <div style={{
+          position: 'fixed',
+          top: '20px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          backgroundColor: '#f44336',
+          color: 'white',
+          padding: '15px 25px',
+          borderRadius: '8px',
+          boxShadow: '0 4px 15px rgba(244,67,54,0.3)',
+          zIndex: 2000,
+          maxWidth: '500px',
+          animation: 'slideDown 0.3s ease-out',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px'
+        }}>
+          <span style={{ fontSize: '20px' }}>⚠️</span>
+          <div style={{ flex: 1 }}>
+            {errorMessage}
+          </div>
+          <button
+            onClick={() => setErrorMessage(null)}
+            style={{
+              background: 'rgba(255,255,255,0.2)',
+              border: 'none',
+              color: 'white',
+              cursor: 'pointer',
+              padding: '5px 10px',
+              borderRadius: '4px',
+              fontSize: '18px',
+              fontWeight: 'bold'
+            }}
+          >
+            ×
+          </button>
+        </div>
       )}
 
       {showSyncConfirm && (
