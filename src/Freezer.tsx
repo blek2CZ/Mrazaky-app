@@ -9,14 +9,15 @@ interface DrawerProps {
   onAddItem: (drawerId: number, item: Item) => void;
   onUpdateItem: (drawerId: number, itemId: string, quantity: number) => void;
   onDeleteItem: (drawerId: number, itemId: string) => void;
+  isExpanded: boolean;
+  onToggle: () => void;
 }
 
-function Drawer({ drawerId, items, templates, onAddItem, onUpdateItem, onDeleteItem }: DrawerProps) {
+function Drawer({ drawerId, items, templates, onAddItem, onUpdateItem, onDeleteItem, isExpanded, onToggle }: DrawerProps) {
   const [selectedTemplate, setSelectedTemplate] = useState('');
   const [customName, setCustomName] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(false);
   const [sortBy, setSortBy] = useState<'name' | 'quantity'>('name');
   const [sortDescending, setSortDescending] = useState(false);
 
@@ -42,16 +43,16 @@ function Drawer({ drawerId, items, templates, onAddItem, onUpdateItem, onDeleteI
   return (
     <div className="drawer">
       <div className="drawer-header">
-        <div className="drawer-title" onClick={() => setIsExpanded(!isExpanded)}>
+        <div className="drawer-title" onClick={onToggle}>
           <h3>Šuplík {drawerId}</h3>
-          <button type="button" className="toggle-drawer-button" onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }}>
+          <button type="button" className="toggle-drawer-button" onClick={(e) => { e.stopPropagation(); onToggle(); }}>
             {isExpanded ? '▼' : '▶'}
           </button>
           <span className="item-count">Položek: {itemCount}</span>
         </div>
         <button onClick={() => { 
-          if (!showAddForm) {
-            setIsExpanded(true);
+          if (!showAddForm && !isExpanded) {
+            onToggle();
           }
           setShowAddForm(!showAddForm);
         }}>
@@ -156,14 +157,17 @@ function Drawer({ drawerId, items, templates, onAddItem, onUpdateItem, onDeleteI
 interface FreezerProps {
   title: string;
   drawerCount: number;
+  freezerType: string;
   drawers: { [drawerId: number]: Item[] };
   templates: ItemTemplate[];
   onAddItem: (drawerId: number, item: Item) => void;
   onUpdateItem: (drawerId: number, itemId: string, quantity: number) => void;
   onDeleteItem: (drawerId: number, itemId: string) => void;
+  openDrawerId: string | null;
+  onToggleDrawer: (drawerId: number) => void;
 }
 
-export default function Freezer({ title, drawerCount, drawers, templates, onAddItem, onUpdateItem, onDeleteItem }: FreezerProps) {
+export default function Freezer({ title, drawerCount, freezerType, drawers, templates, onAddItem, onUpdateItem, onDeleteItem, openDrawerId, onToggleDrawer }: FreezerProps) {
   return (
     <div className="freezer">
       <h2>{title} ({drawerCount} šuplíků)</h2>
@@ -177,6 +181,8 @@ export default function Freezer({ title, drawerCount, drawers, templates, onAddI
             onAddItem={onAddItem}
             onUpdateItem={onUpdateItem}
             onDeleteItem={onDeleteItem}
+            isExpanded={openDrawerId === `${freezerType}-${drawerId}`}
+            onToggle={() => onToggleDrawer(drawerId)}
           />
         ))}
       </div>

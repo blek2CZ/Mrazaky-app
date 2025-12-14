@@ -16,6 +16,7 @@ function App() {
   const [showSyncModal, setShowSyncModal] = useState<'generate' | 'enter' | null>(null);
   const [showDisconnectModal, setShowDisconnectModal] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [openSection, setOpenSection] = useState<string | null>(null);
   const unsubscribeRef = useRef<(() => void) | null>(null);
   const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const firebaseConfigured = isFirebaseConfigured();
@@ -332,6 +333,10 @@ function App() {
     setTemplates(prev => [...prev, newTemplate]);
   };
 
+  const handleEditTemplate = (id: string, newName: string) => {
+    setTemplates(prev => prev.map(t => t.id === id ? { ...t, name: newName } : t));
+  };
+
   const handleDeleteTemplate = (id: string) => {
     setTemplates(prev => prev.filter(t => t.id !== id));
   };
@@ -489,28 +494,43 @@ function App() {
       <TemplatesManager
         templates={templates}
         onAddTemplate={handleAddTemplate}
+        onEditTemplate={handleEditTemplate}
         onDeleteTemplate={handleDeleteTemplate}
         isTemplateUsed={isTemplateUsed}
+        isExpanded={openSection === 'template-manager'}
+        onToggle={() => setOpenSection(openSection === 'template-manager' ? null : 'template-manager')}
       />
 
       <Freezer
         title="Malý mrazák"
         drawerCount={3}
+        freezerType="small"
         drawers={freezerData.small}
         templates={templates}
         onAddItem={(drawerId, item) => handleAddItem('small', drawerId, item)}
         onUpdateItem={(drawerId, itemId, quantity) => handleUpdateItem('small', drawerId, itemId, quantity)}
         onDeleteItem={(drawerId, itemId) => handleDeleteItem('small', drawerId, itemId)}
+        openDrawerId={openSection?.startsWith('small-') ? openSection : null}
+        onToggleDrawer={(drawerId) => {
+          const sectionId = `small-${drawerId}`;
+          setOpenSection(openSection === sectionId ? null : sectionId);
+        }}
       />
 
       <Freezer
         title="Velký mrazák"
         drawerCount={7}
+        freezerType="large"
         drawers={freezerData.large}
         templates={templates}
         onAddItem={(drawerId, item) => handleAddItem('large', drawerId, item)}
         onUpdateItem={(drawerId, itemId, quantity) => handleUpdateItem('large', drawerId, itemId, quantity)}
         onDeleteItem={(drawerId, itemId) => handleDeleteItem('large', drawerId, itemId)}
+        openDrawerId={openSection?.startsWith('large-') ? openSection : null}
+        onToggleDrawer={(drawerId) => {
+          const sectionId = `large-${drawerId}`;
+          setOpenSection(openSection === sectionId ? null : sectionId);
+        }}
       />
     </>
   );
