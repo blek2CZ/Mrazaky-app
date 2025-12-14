@@ -86,18 +86,19 @@
 }
 
 .template-item.template-used {
-  background-color: #1e3a1e;
+  background-color: #a5d6a7;
   border-color: #66bb6a;
-  background-image: linear-gradient(135deg, transparent 0%, rgba(76, 175, 80, 0.2) 100%);
+  background-image: linear-gradient(135deg, #81c784 0%, #a5d6a7 100%);
 }
 
 .template-item.template-used .template-name {
-  color: #a5d6a7;
+  color: #1b5e20;
+  font-weight: 600;
 }
 
 .template-item.template-used:hover {
-  border-color: #81c784;
-  background-color: #234d23;
+  border-color: #4caf50;
+  background-color: #c5e1a5;
 }
 
 .template-name {
