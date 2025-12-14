@@ -17,6 +17,7 @@ function Drawer({ drawerId, items, templates, onAddItem, onUpdateItem, onDeleteI
   const [quantity, setQuantity] = useState(1);
   const [showAddForm, setShowAddForm] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [sortBy, setSortBy] = useState<'name' | 'quantity'>('name');
 
   const handleAdd = () => {
     const name = selectedTemplate === 'custom' ? customName : templates.find(t => t.id === selectedTemplate)?.name;
@@ -106,21 +107,36 @@ function Drawer({ drawerId, items, templates, onAddItem, onUpdateItem, onDeleteI
           )}
 
           {items.length > 0 && (
-            <div className="items-list">
-              {items.map(item => (
-                <div key={item.id} className="item">
-                  <div className="item-info">
-                    <span className="item-name">{item.name}</span>
-                    <span className="item-quantity">{item.quantity} ks</span>
+            <>
+              <div className="drawer-sort">
+                <label>Řadit:</label>
+                <select value={sortBy} onChange={(e) => setSortBy(e.target.value as 'name' | 'quantity')}>
+                  <option value="name">Abecedně</option>
+                  <option value="quantity">Podle množství</option>
+                </select>
+              </div>
+              <div className="items-list">
+                {[...items].sort((a, b) => {
+                  if (sortBy === 'name') {
+                    return a.name.localeCompare(b.name, 'cs');
+                  } else {
+                    return b.quantity - a.quantity; // Od nejvyššího
+                  }
+                }).map(item => (
+                  <div key={item.id} className="item">
+                    <div className="item-info">
+                      <span className="item-name">{item.name}</span>
+                      <span className="item-quantity">{item.quantity} ks</span>
+                    </div>
+                    <div className="item-actions">
+                      <button onClick={() => onUpdateItem(drawerId, item.id, item.quantity - 1)}>−</button>
+                      <button onClick={() => onUpdateItem(drawerId, item.id, item.quantity + 1)}>+</button>
+                      <button onClick={() => onDeleteItem(drawerId, item.id)}>🗑️</button>
+                    </div>
                   </div>
-                  <div className="item-actions">
-                    <button onClick={() => onUpdateItem(drawerId, item.id, item.quantity - 1)}>−</button>
-                    <button onClick={() => onUpdateItem(drawerId, item.id, item.quantity + 1)}>+</button>
-                    <button onClick={() => onDeleteItem(drawerId, item.id)}>🗑️</button>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            </>
           )}
         </>
       )}
