@@ -5,6 +5,7 @@ import SyncModal from './SyncModal';
 import LoadingOverlay from './components/LoadingOverlay';
 import { DisconnectModal } from './components/DisconnectModal';
 import { ConflictResolutionModal } from './components/ConflictResolutionModal';
+import { NotificationSnackbar } from './components/NotificationSnackbar';
 import { FreezerData, Item, ItemTemplate } from './types';
 import { loadFreezerData, saveFreezerData, loadItemTemplates, saveItemTemplates } from './storage';
 import { exportData, importData } from './dataSync';
@@ -761,83 +762,19 @@ function App() {
       )}
 
       {errorMessage && (
-        <div style={{
-          position: 'fixed',
-          top: '20px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          backgroundColor: '#f44336',
-          color: 'white',
-          padding: '15px 25px',
-          borderRadius: '8px',
-          boxShadow: '0 4px 15px rgba(244,67,54,0.3)',
-          zIndex: 2000,
-          maxWidth: '500px',
-          animation: 'slideDown 0.3s ease-out',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '10px'
-        }}>
-          <span style={{ fontSize: '20px' }}>⚠️</span>
-          <div style={{ flex: 1 }}>
-            {errorMessage}
-          </div>
-          <button
-            onClick={() => setErrorMessage(null)}
-            style={{
-              background: 'rgba(255,255,255,0.2)',
-              border: 'none',
-              color: 'white',
-              cursor: 'pointer',
-              padding: '5px 10px',
-              borderRadius: '4px',
-              fontSize: '18px',
-              fontWeight: 'bold'
-            }}
-          >
-            ×
-          </button>
-        </div>
+        <NotificationSnackbar
+          type="error"
+          message={errorMessage}
+          onClose={() => setErrorMessage(null)}
+        />
       )}
 
       {successMessage && (
-        <div style={{
-          position: 'fixed',
-          top: '20px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          backgroundColor: '#4CAF50',
-          color: 'white',
-          padding: '15px 25px',
-          borderRadius: '8px',
-          boxShadow: '0 4px 15px rgba(76,175,80,0.3)',
-          zIndex: 2000,
-          maxWidth: '500px',
-          animation: 'slideDown 0.3s ease-out',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '10px'
-        }}>
-          <span style={{ fontSize: '20px' }}>✅</span>
-          <div style={{ flex: 1 }}>
-            {successMessage}
-          </div>
-          <button
-            onClick={() => setSuccessMessage(null)}
-            style={{
-              background: 'rgba(255,255,255,0.2)',
-              border: 'none',
-              color: 'white',
-              cursor: 'pointer',
-              padding: '5px 10px',
-              borderRadius: '4px',
-              fontSize: '18px',
-              fontWeight: 'bold'
-            }}
-          >
-            ×
-          </button>
-        </div>
+        <NotificationSnackbar
+          type="success"
+          message={successMessage}
+          onClose={() => setSuccessMessage(null)}
+        />
       )}
 
       {showSyncConfirm && (

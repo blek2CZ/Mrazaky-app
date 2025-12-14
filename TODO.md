@@ -20,10 +20,10 @@
 
 ### 🚧 Probíhá
 - [ ] **1.2 Vyčlenění modalů z App.tsx**
-  - [ ] ConflictResolutionModal.tsx + testy
-  - [x] DisconnectModal.tsx + testy ✅ (21/21 tests)
+  - [x] ConflictResolutionModal.tsx + testy ✅ (36/36 tests)
+  - [x] DisconnectModal.tsx + testy ✅
   - [x] LoadingOverlay.tsx + testy ✅
-  - [ ] Aktualizace App.tsx
+  - [ ] NotificationSnackbar.tsx + testy
 
 ### 📝 Čeká
   
