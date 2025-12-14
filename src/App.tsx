@@ -46,7 +46,7 @@ function App() {
   const checkForUpdates = async (showSuccessMessage: boolean = false) => {
     if (!syncCode || !firebaseConfigured) {
       setErrorMessage('Synchronizace není k dispozici.');
-      setTimeout(() => setErrorMessage(null), 5000);
+      setTimeout(() => setErrorMessage(null), 10000);
       return;
     }
 
@@ -65,7 +65,7 @@ function App() {
         } else {
           setErrorMessage(result.error || 'Nepodařilo se načíst data z cloudu.');
         }
-        setTimeout(() => setErrorMessage(null), 5000);
+        setTimeout(() => setErrorMessage(null), 10000);
         setIsCheckingForUpdates(false);
         return;
       }
@@ -73,7 +73,7 @@ function App() {
       const { data } = result;
       if (!data) {
         setErrorMessage('Data z cloudu jsou neplatná.');
-        setTimeout(() => setErrorMessage(null), 5000);
+        setTimeout(() => setErrorMessage(null), 10000);
         setIsCheckingForUpdates(false);
         return;
       }
@@ -122,8 +122,9 @@ function App() {
       initialSyncDone.current = true;
     } catch (error) {
       console.error('❌ Chyba při kontrole dat:', error);
-      setErrorMessage('Chyba při kontrole dat z cloudu. Zkontrolujte připojení k internetu.');
-      setTimeout(() => setErrorMessage(null), 5000);
+      const errorMsg = error instanceof Error ? error.message : 'Neznámá chyba';
+      setErrorMessage(`Chyba při kontrole dat: ${errorMsg}`);
+      setTimeout(() => setErrorMessage(null), 10000);
     } finally {
       setIsCheckingForUpdates(false);
     }
@@ -147,7 +148,7 @@ function App() {
     
     if (!syncCode || !firebaseConfigured) {
       setErrorMessage('Synchronizace není k dispozici. Zkontrolujte připojení.');
-      setTimeout(() => setErrorMessage(null), 5000);
+      setTimeout(() => setErrorMessage(null), 10000);
       return;
     }
     
@@ -162,14 +163,14 @@ function App() {
         console.log('✅ Data úspěšně odeslána do cloudu');
       } else if (!result.success) {
         const errorMsg = result.reason || 'Neznámá chyba';
-        setErrorMessage(`Nepodařilo se odeslat data: ${errorMsg}`);
-        setTimeout(() => setErrorMessage(null), 7000);
+        setErrorMessage(errorMsg);
+        setTimeout(() => setErrorMessage(null), 10000);
       }
     } catch (error) {
       console.error('❌ Chyba při odesílání do Firebase:', error);
       const errorMsg = error instanceof Error ? error.message : 'Neznámá chyba';
-      setErrorMessage(`Chyba při odesílání dat: ${errorMsg}. Zkontrolujte připojení k internetu.`);
-      setTimeout(() => setErrorMessage(null), 7000);
+      setErrorMessage(`Chyba při odesílání dat: ${errorMsg}`);
+      setTimeout(() => setErrorMessage(null), 10000);
     }
   };
 

@@ -51,49 +51,76 @@ export const syncDataToFirebase = async (
   adminPasswordHash?: string
 ): Promise<{ success: boolean; serverTimestamp?: number; reason?: string }> => {
   if (!db) {
-    throw new Error('Firebase není nakonfigurován');
+    return { success: false, reason: 'Firebase není nakonfigurován' };
   }
 
-  const dataRef = doc(db, 'sync-data', syncCode.toUpperCase());
-  
-  // Přečti aktuální data z Firebase
-  const snapshot = await getDoc(dataRef);
-  
-  if (snapshot.exists()) {
-    const serverData = snapshot.data();
-    const serverTimestamp = serverData.lastModified || 0;
+  try {
+    const dataRef = doc(db, 'sync-data', syncCode.toUpperCase());
     
-    // Pokud máme starší data než server, odmítni zápis
-    if (localTimestamp < serverTimestamp) {
-      console.warn('⚠️ Zápis odmítnut: lokální data jsou starší než server', {
-        local: new Date(localTimestamp).toISOString(),
-        server: new Date(serverTimestamp).toISOString()
-      });
+    // Přečti aktuální data z Firebase
+    const snapshot = await getDoc(dataRef);
+    
+    if (snapshot.exists()) {
+      const serverData = snapshot.data();
+      const serverTimestamp = serverData.lastModified || 0;
+      
+      // Pokud máme starší data než server, odmítni zápis
+      if (localTimestamp < serverTimestamp) {
+        console.warn('⚠️ Zápis odmítnut: lokální data jsou starší než server', {
+          local: new Date(localTimestamp).toISOString(),
+          server: new Date(serverTimestamp).toISOString()
+        });
+        return { 
+          success: false, 
+          serverTimestamp,
+          reason: 'Lokální data jsou starší než data v databázi. Načítám aktuální verzi...'
+        };
+      }
+    }
+    
+    const newTimestamp = Date.now();
+    const data: any = {
+      freezerData,
+      templates,
+      lastModified: newTimestamp,
+      lastUpdated: new Date().toISOString()
+    };
+    
+    // Při vytvoření nového kódu uložíme i hash hesla
+    if (adminPasswordHash) {
+      data.adminPasswordHash = adminPasswordHash;
+    }
+    
+    await setDoc(dataRef, data, { merge: true });
+    console.log('✅ Data uložena do Firebase s timestamp:', new Date(newTimestamp).toISOString());
+    
+    return { success: true, serverTimestamp: newTimestamp };
+  } catch (error: any) {
+    console.error('❌ Chyba při zápisu do Firebase:', error);
+    
+    // Rozpoznání specifických Firebase chyb
+    if (error.code === 'resource-exhausted' || error.message?.includes('quota')) {
       return { 
         success: false, 
-        serverTimestamp,
-        reason: 'Lokální data jsou starší než data v databázi. Načítám aktuální verzi...'
+        reason: '🚫 Denní kvóta Firebase byla překročena. Zkuste to zítra nebo použijte jiný synchronizační kód.' 
+      };
+    } else if (error.code === 'permission-denied') {
+      return { 
+        success: false, 
+        reason: '🚫 Přístup odepřen. Zkontrolujte synchronizační kód.' 
+      };
+    } else if (error.code === 'unavailable' || error.message?.includes('network')) {
+      return { 
+        success: false, 
+        reason: '📡 Nelze se připojit k databázi. Zkontrolujte připojení k internetu.' 
       };
     }
+    
+    return { 
+      success: false, 
+      reason: `Chyba: ${error.message || 'Neznámá chyba při zápisu do cloudu'}` 
+    };
   }
-  
-  const newTimestamp = Date.now();
-  const data: any = {
-    freezerData,
-    templates,
-    lastModified: newTimestamp,
-    lastUpdated: new Date().toISOString()
-  };
-  
-  // Při vytvoření nového kódu uložíme i hash hesla
-  if (adminPasswordHash) {
-    data.adminPasswordHash = adminPasswordHash;
-  }
-  
-  await setDoc(dataRef, data, { merge: true });
-  console.log('✅ Data uložena do Firebase s timestamp:', new Date(newTimestamp).toISOString());
-  
-  return { success: true, serverTimestamp: newTimestamp };
 };
 
 export const subscribeToSync = (
@@ -217,11 +244,25 @@ export const fetchDataFromFirebase = async (
         lastModified: serverData.lastModified || Date.now()
       }
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ Chyba při načítání dat z Firebase:', error);
+    
+    // Rozpoznání specifických Firebase chyb
+    let errorMessage = 'Neznámá chyba při načítání dat';
+    
+    if (error.code === 'resource-exhausted' || error.message?.includes('quota')) {
+      errorMessage = '🚫 Denní kvóta Firebase byla překročena. Zkuste to zítra nebo použijte jiný synchronizační kód.';
+    } else if (error.code === 'permission-denied') {
+      errorMessage = '🚫 Přístup odepřen. Zkontrolujte synchronizační kód.';
+    } else if (error.code === 'unavailable' || error.message?.includes('network')) {
+      errorMessage = '📡 Nelze se připojit k databázi. Zkontrolujte připojení k internetu.';
+    } else if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+    
     return { 
       success: false, 
-      error: error instanceof Error ? error.message : 'Neznámá chyba při načítání dat' 
+      error: errorMessage
     };
   }
 };
