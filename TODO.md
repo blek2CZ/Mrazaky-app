@@ -21,8 +21,8 @@
 ### 🚧 Probíhá
 - [ ] **1.2 Vyčlenění modalů z App.tsx**
   - [ ] ConflictResolutionModal.tsx + testy
-  - [ ] DisconnectModal.tsx + testy
-  - [x] LoadingOverlay.tsx + testy ✅ (8/8 tests)
+  - [x] DisconnectModal.tsx + testy ✅ (21/21 tests)
+  - [x] LoadingOverlay.tsx + testy ✅
   - [ ] Aktualizace App.tsx
 
 ### 📝 Čeká

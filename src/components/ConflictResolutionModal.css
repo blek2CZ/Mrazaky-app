@@ -1,0 +1,10 @@
+/* Shared modal styles are in DisconnectModal.css */
+
+.conflict-modal {
+  max-width: 700px;
+}
+
+.conflict-modal h3 {
+  font-size: 1.1rem;
+  margin: 0 0 0.5rem 0;
+}
