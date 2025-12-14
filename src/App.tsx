@@ -85,11 +85,17 @@ function App() {
       }
 
       // Porovnej timestamp
+      console.log('🔍 Porovnání timestampů:', {
+        lokalniTimestamp: lastModified,
+        lokalniDatum: new Date(lastModified).toISOString(),
+        serverTimestamp: data.lastModified,
+        serverDatum: new Date(data.lastModified).toISOString(),
+        rozdil: data.lastModified - lastModified,
+        serverJeNovejsi: data.lastModified > lastModified
+      });
+
       if (data.lastModified > lastModified) {
-        console.log('🔄 Nová data nalezena:', {
-          local: new Date(lastModified).toISOString(),
-          server: new Date(data.lastModified).toISOString()
-        });
+        console.log('🔄 Nová data nalezena - načítám z cloudu');
 
         // Upozorni uživatele, pokud má neuložené změny
         if (hasUnsavedChanges) {
@@ -118,10 +124,16 @@ function App() {
           setSuccessMessage('✅ Nová data byla načtena z cloudu');
           setTimeout(() => setSuccessMessage(null), 5000);
         }
-      } else if (showSuccessMessage) {
-        console.log('✅ Data jsou aktuální');
-        setSuccessMessage('✅ Data jsou aktuální - žádné nové změny v cloudu');
-        setTimeout(() => setSuccessMessage(null), 5000);
+      } else {
+        console.log('✅ Lokální data jsou aktuální nebo novější než server');
+        if (showSuccessMessage) {
+          if (data.lastModified === lastModified) {
+            setSuccessMessage('✅ Data jsou aktuální - stejná verze jako v cloudu');
+          } else {
+            setSuccessMessage('✅ Lokální data jsou novější než v cloudu - máte neuložené změny?');
+          }
+          setTimeout(() => setSuccessMessage(null), 6000);
+        }
       }
 
       setLastChecked(Date.now());
