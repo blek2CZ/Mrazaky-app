@@ -216,6 +216,16 @@
   font-style: italic;
 }
 
+/* Jemné linky mezi položkami v selectu */
+.add-item-form select option {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0.5rem 0.75rem;
+}
+
+.add-item-form select option:last-child {
+  border-bottom: none;
+}
+
 @media (max-width: 768px) {
   .drawer {
     padding: 0.75rem;
