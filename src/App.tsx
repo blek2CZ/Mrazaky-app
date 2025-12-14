@@ -18,6 +18,7 @@ function App() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [openSection, setOpenSection] = useState<string | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [changeCount, setChangeCount] = useState(0);
   const [lastModified, setLastModified] = useState<number>(() => {
     const stored = localStorage.getItem('mrazaky-lastModified');
     return stored ? parseInt(stored) : Date.now();
@@ -200,6 +201,15 @@ function App() {
   const handleManualSync = async () => {
     if (!syncCode || !firebaseConfigured || !hasUnsavedChanges) return;
     
+    const shouldSync = window.confirm(
+      `📊 Máte ${changeCount} neuložených změn.\n\n` +
+      'Chcete je odeslat do cloudu?\n\n' +
+      'OK = Odeslat hned\n' +
+      'Zrušit = Pokračovat v úpravách'
+    );
+    
+    if (!shouldSync) return;
+    
     try {
       const newTimestamp = Date.now();
       const result = await syncDataToFirebase(syncCode, freezerData, templates, newTimestamp);
@@ -207,6 +217,7 @@ function App() {
       if (result.success && result.serverTimestamp) {
         setLastModified(result.serverTimestamp);
         setHasUnsavedChanges(false);
+        setChangeCount(0);
         console.log('✅ Data úspěšně odeslána do cloudu');
       } else if (!result.success) {
         alert(`❌ Nepodařilo se odeslat data:\n\n${result.reason}\n\nNačtou se aktuální data z cloudu.`);
@@ -228,6 +239,7 @@ function App() {
     saveFreezerData(newFreezerData);
     setFreezerData(newFreezerData);
     setHasUnsavedChanges(true);
+    setChangeCount(prev => prev + 1);
 
     // Pokud je to nová položka (custom), přidej do templates
     if (!templates.find(t => t.name === item.name)) {
@@ -260,6 +272,7 @@ function App() {
     saveFreezerData(newFreezerData);
     setFreezerData(newFreezerData);
     setHasUnsavedChanges(true);
+    setChangeCount(prev => prev + 1);
   };
 
   const handleDeleteItem = async (freezerType: 'small' | 'large' | 'smallMama', drawerId: number, itemId: string) => {
@@ -275,6 +288,7 @@ function App() {
     saveFreezerData(newFreezerData);
     setFreezerData(newFreezerData);
     setHasUnsavedChanges(true);
+    setChangeCount(prev => prev + 1);
   };
 
   const handleAddTemplate = (name: string) => {
@@ -316,6 +330,7 @@ function App() {
     
     setFreezerData(newFreezerData);
     setHasUnsavedChanges(true);
+    setChangeCount(prev => prev + 1);
     
     // Aktualizuj template se stejným názvem
     setTemplates(prev => prev.map(t => t.name === oldName ? { ...t, name: newName } : t));
@@ -423,6 +438,7 @@ function App() {
     saveFreezerData(newFreezerData);
     setFreezerData(newFreezerData);
     setHasUnsavedChanges(true);
+    setChangeCount(prev => prev + 1);
     console.log('✓ Uloženo do localStorage');
     console.log('=== PŘESUN POLOŽKY - DOKONČENO ✓ ===');
   };
@@ -704,7 +720,10 @@ function App() {
             }}
           >
             <span style={{ fontSize: '20px' }}>☁️</span>
-            <span>Odeslat změny do cloudu</span>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+              <span>Odeslat změny do cloudu</span>
+              <span style={{ fontSize: '12px', opacity: 0.9 }}>({changeCount} {changeCount === 1 ? 'změna' : changeCount >= 2 && changeCount <= 4 ? 'změny' : 'změn'})</span>
+            </div>
           </button>
         </div>
       )}
