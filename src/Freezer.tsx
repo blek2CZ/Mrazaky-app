@@ -6,6 +6,7 @@ interface DrawerProps {
   drawerId: number;
   items: Item[];
   templates: ItemTemplate[];
+  allDrawers: { [drawerId: number]: Item[] };
   onAddItem: (drawerId: number, item: Item) => void;
   onUpdateItem: (drawerId: number, itemId: string, quantity: number) => void;
   onDeleteItem: (drawerId: number, itemId: string) => void;
@@ -17,7 +18,7 @@ interface DrawerProps {
   onToggle: () => void;
 }
 
-function Drawer({ drawerId, items, templates, onAddItem, onUpdateItem, onDeleteItem, onEditItem, onMoveItem, freezerType, totalDrawers, isExpanded, onToggle }: DrawerProps) {
+function Drawer({ drawerId, items, templates, allDrawers, onAddItem, onUpdateItem, onDeleteItem, onEditItem, onMoveItem, freezerType, totalDrawers, isExpanded, onToggle }: DrawerProps) {
   const [selectedTemplate, setSelectedTemplate] = useState('');
   const [customName, setCustomName] = useState('');
   const [quantity, setQuantity] = useState(1);
@@ -79,9 +80,23 @@ function Drawer({ drawerId, items, templates, onAddItem, onUpdateItem, onDeleteI
               {[...templates]
                 .filter(template => !items.some(item => item.name === template.name))
                 .sort((a, b) => a.name.localeCompare(b.name, 'cs'))
-                .map(template => (
-                  <option key={template.id} value={template.id}>{template.name}</option>
-                ))}
+                .map(template => {
+                  // Zkontroluj zda je položka v jiném šuplíku
+                  const isInOtherDrawer = Object.entries(allDrawers)
+                    .filter(([id]) => parseInt(id) !== drawerId)
+                    .some(([_, drawerItems]) => drawerItems.some(item => item.name === template.name));
+                  
+                  return (
+                    <option 
+                      key={template.id} 
+                      value={template.id}
+                      className={isInOtherDrawer ? 'item-in-other-drawer' : ''}
+                      style={isInOtherDrawer ? { backgroundColor: '#fff3cd', color: '#856404' } : {}}
+                    >
+                      {template.name}{isInOtherDrawer ? ' •' : ''}
+                    </option>
+                  );
+                })}
             </select>
           </div>
 
@@ -297,6 +312,7 @@ export default function Freezer({ title, drawerCount, freezerType, drawers, temp
             drawerId={drawerId}
             items={drawers[drawerId] || []}
             templates={templates}
+            allDrawers={drawers}
             onAddItem={onAddItem}
             onUpdateItem={onUpdateItem}
             onDeleteItem={onDeleteItem}

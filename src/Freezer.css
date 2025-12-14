@@ -209,6 +209,13 @@
   border-color: #61dafb;
 }
 
+/* Položky použité v jiných šuplících */
+.item-in-other-drawer {
+  background-color: #fff3cd !important;
+  color: #856404 !important;
+  font-style: italic;
+}
+
 @media (max-width: 768px) {
   .drawer {
     padding: 0.75rem;
