@@ -18,6 +18,7 @@ function Drawer({ drawerId, items, templates, onAddItem, onUpdateItem, onDeleteI
   const [showAddForm, setShowAddForm] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [sortBy, setSortBy] = useState<'name' | 'quantity'>('name');
+  const [sortDescending, setSortDescending] = useState(false);
 
   const handleAdd = () => {
     const name = selectedTemplate === 'custom' ? customName : templates.find(t => t.id === selectedTemplate)?.name;
@@ -114,14 +115,22 @@ function Drawer({ drawerId, items, templates, onAddItem, onUpdateItem, onDeleteI
                   <option value="name">Abecedně</option>
                   <option value="quantity">Podle množství</option>
                 </select>
+                <button 
+                  onClick={() => setSortDescending(!sortDescending)}
+                  title={sortDescending ? 'Sestupně' : 'Vzestupně'}
+                >
+                  {sortDescending ? '↓' : '↑'}
+                </button>
               </div>
               <div className="items-list">
                 {[...items].sort((a, b) => {
+                  let result;
                   if (sortBy === 'name') {
-                    return a.name.localeCompare(b.name, 'cs');
+                    result = a.name.localeCompare(b.name, 'cs');
                   } else {
-                    return b.quantity - a.quantity; // Od nejvyššího
+                    result = b.quantity - a.quantity;
                   }
+                  return sortDescending ? -result : result;
                 }).map(item => (
                   <div key={item.id} className="item">
                     <div className="item-info">

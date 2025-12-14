@@ -103,9 +103,9 @@
 
 .drawer-sort select {
   padding: 0.4em 0.8em;
-  background-color: #1a1a1a;
+  background-color: #fff;
   border: 1px solid #444;
-  color: #fff;
+  color: #000;
   border-radius: 4px;
   cursor: pointer;
   font-size: 0.9em;
@@ -113,6 +113,21 @@
 
 .drawer-sort select:hover {
   border-color: #646cff;
+}
+
+.drawer-sort button {
+  padding: 0.4em 0.6em;
+  font-size: 0.9em;
+  background-color: #1a1a1a;
+  border: 1px solid #444;
+  color: #fff;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.drawer-sort button:hover {
+  border-color: #646cff;
+  background-color: #2a2a2a;
 }
 
 .items-list {
