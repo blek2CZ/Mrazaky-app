@@ -57,6 +57,7 @@ function App() {
       const result = await fetchDataFromFirebase(syncCode);
 
       if (!result.success) {
+        const isFirstLoad = lastModified === 0;
         if (result.invalidated) {
           setErrorMessage('Synchronizační kód již není platný. Admin změnil kód.');
           clearSyncCode();
@@ -64,7 +65,11 @@ function App() {
           setIsSyncing(false);
           setShowSyncModal('enter');
         } else {
-          setErrorMessage(result.error || 'Nepodařilo se načíst data z cloudu.');
+          const errorMsg = result.error || 'Nepodařilo se načíst data z cloudu.';
+          setErrorMessage(isFirstLoad 
+            ? `⚠️ Nepodařilo se načíst data při spuštění: ${errorMsg}` 
+            : errorMsg
+          );
         }
         setTimeout(() => setErrorMessage(null), 10000);
         setIsCheckingForUpdates(false);
@@ -73,7 +78,7 @@ function App() {
 
       const { data } = result;
       if (!data) {
-        setErrorMessage('Data z cloudu jsou neplatná.');
+        setErrorMessage('⚠️ Data z cloudu jsou neplatná nebo poškozená.');
         setTimeout(() => setErrorMessage(null), 10000);
         setIsCheckingForUpdates(false);
         return;
@@ -140,9 +145,19 @@ function App() {
       setIsSyncing(true);
       initialSyncDone.current = true;
     } catch (error) {
+      const isFirstLoad = lastModified === 0;
       console.error('❌ Chyba při kontrole dat:', error);
       const errorMsg = error instanceof Error ? error.message : 'Neznámá chyba';
-      setErrorMessage(`Chyba při kontrole dat: ${errorMsg}`);
+      
+      // Detekce síťových chyb
+      if (errorMsg.includes('network') || errorMsg.includes('Failed to fetch') || errorMsg.includes('NetworkError')) {
+        setErrorMessage('📡 Není připojení k internetu. Zkontrolujte síťové připojení.');
+      } else if (isFirstLoad) {
+        setErrorMessage(`⚠️ Nepodařilo se načíst data při spuštění: ${errorMsg}`);
+      } else {
+        setErrorMessage(`Chyba při kontrole dat: ${errorMsg}`);
+      }
+      
       setTimeout(() => setErrorMessage(null), 10000);
     } finally {
       setIsCheckingForUpdates(false);
@@ -152,7 +167,12 @@ function App() {
   // Kontrola dat při startu aplikace
   useEffect(() => {
     if (syncCode && firebaseConfigured) {
-      checkForUpdates();
+      console.log('🚀 Aplikace spuštěna - načítám data z cloudu...');
+      checkForUpdates(false); // false = nezobrazovat success hlášku při startu
+    } else if (syncCode && !firebaseConfigured) {
+      console.error('❌ Firebase není nakonfigurován');
+      setErrorMessage('Firebase databáze není dostupná. Aplikace funguje pouze offline.');
+      setTimeout(() => setErrorMessage(null), 10000);
     }
   }, [syncCode, firebaseConfigured]);
 
