@@ -34,15 +34,15 @@ export default function TemplatesManager({ templates, onAddTemplate, onEditTempl
   };
 
   return (
-    <div className="templates-manager" onClick={(e) => e.stopPropagation()}>
-      <div className="templates-header" onClick={onToggle}>
+    <div className="templates-manager">
+      <div className="templates-header" onClick={(e) => { e.stopPropagation(); onToggle(); }}>
         <h2>Správa položek</h2>
         <button type="button" className="toggle-button" onClick={(e) => { e.stopPropagation(); onToggle(); }}>{isExpanded ? '▼' : '▶'}</button>
       </div>
       
       {isExpanded && (
         <>
-          <div className="templates-list">
+          <div className="templates-list" onClick={(e) => e.stopPropagation()}>
         {[...templates].sort((a, b) => a.name.localeCompare(b.name, 'cs')).map(template => (
           <div key={template.id} className={`template-item ${isTemplateUsed(template.name) ? 'template-used' : ''}`}>
             {editingId === template.id ? (
@@ -130,9 +130,9 @@ export default function TemplatesManager({ templates, onAddTemplate, onEditTempl
       </div>
 
           {!showAddForm ? (
-            <button onClick={() => setShowAddForm(true)}>+ Přidat novou položku</button>
+            <button onClick={(e) => { e.stopPropagation(); setShowAddForm(true); }}>+ Přidat novou položku</button>
           ) : (
-            <div className="add-template-form">
+            <div className="add-template-form" onClick={(e) => e.stopPropagation()}>
               <input
                 type="text"
                 value={newTemplateName}

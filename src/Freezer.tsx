@@ -56,8 +56,8 @@ function Drawer({ drawerId, items, templates, allDrawers, onAddItem, onUpdateIte
   const itemCount = items.length;
 
   return (
-    <div className="drawer" onClick={(e) => e.stopPropagation()}>
-      <div className="drawer-header">
+    <div className="drawer">
+      <div className="drawer-header" onClick={(e) => e.stopPropagation()}>
         <div className="drawer-title" onClick={onToggle}>
           <h3>Šuplík {drawerId}</h3>
           <button type="button" className="toggle-drawer-button" onClick={(e) => { e.stopPropagation(); onToggle(); }}>
@@ -78,7 +78,7 @@ function Drawer({ drawerId, items, templates, allDrawers, onAddItem, onUpdateIte
       {isExpanded && (
         <>
           {showAddForm && (
-        <div className="add-item-form">
+        <div className="add-item-form" onClick={(e) => e.stopPropagation()}>
           <div className="form-field">
             <label>Vyberte položku:</label>
             <select value={selectedTemplate} onChange={(e) => setSelectedTemplate(e.target.value)}>
@@ -140,7 +140,7 @@ function Drawer({ drawerId, items, templates, allDrawers, onAddItem, onUpdateIte
 
           {items.length > 0 && (
             <>
-              <div className="drawer-sort">
+              <div className="drawer-sort" onClick={(e) => e.stopPropagation()}>
                 <label>Řadit:</label>
                 <select value={sortBy} onChange={(e) => setSortBy(e.target.value as 'name' | 'quantity')}>
                   <option value="name">Abecedně</option>
@@ -153,7 +153,7 @@ function Drawer({ drawerId, items, templates, allDrawers, onAddItem, onUpdateIte
                   {sortDescending ? '↓' : '↑'}
                 </button>
               </div>
-              <div className="items-list">
+              <div className="items-list" onClick={(e) => e.stopPropagation()}>
                 {[...items].sort((a, b) => {
                   let result;
                   if (sortBy === 'name') {
