@@ -17,6 +17,10 @@ function App() {
   const [showDisconnectModal, setShowDisconnectModal] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [openSection, setOpenSection] = useState<string | null>(null);
+  const [lastModified, setLastModified] = useState<number>(() => {
+    const stored = localStorage.getItem('mrazaky-lastModified');
+    return stored ? parseInt(stored) : Date.now();
+  });
   const unsubscribeRef = useRef<(() => void) | null>(null);
   const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const initialSyncDone = useRef<boolean>(false);
@@ -30,6 +34,10 @@ function App() {
     saveItemTemplates(templates);
   }, [templates]);
 
+  useEffect(() => {
+    localStorage.setItem('mrazaky-lastModified', lastModified.toString());
+  }, [lastModified]);
+
   // Firebase synchronizace
   useEffect(() => {
     if (!syncCode || !firebaseConfigured) return;
@@ -39,10 +47,11 @@ function App() {
     const setupListener = () => {
       const unsubscribe = subscribeToSync(
         syncCode, 
-        ({ freezerData: newFreezerData, templates: newTemplates }) => {
-          console.log('☁️ Přijata data z Firebase');
+        ({ freezerData: newFreezerData, templates: newTemplates, lastModified: serverTimestamp }) => {
+          console.log('☁️ Přijata data z Firebase, timestamp:', new Date(serverTimestamp).toISOString());
           setFreezerData(newFreezerData);
           setTemplates(newTemplates);
+          setLastModified(serverTimestamp);
           saveFreezerData(newFreezerData);
           saveItemTemplates(newTemplates);
           // Označ, že první sync proběhl
@@ -90,15 +99,28 @@ function App() {
         
         try {
           // Ulož data do Firebase a počkej na potvrzení
-          await syncDataToFirebase(syncCode, freezerData, templates);
+          const result = await syncDataToFirebase(syncCode, freezerData, templates, lastModified);
+          
+          // Pokud byl zápis odmítnut kvůli starším datům, načti aktuální verzi
+          if (!result.success) {
+            console.warn('⚠️ Auto-sync odmítnut:', result.reason);
+            // Listener automaticky načte aktuální data, nemusíme dělat nic
+            return;
+          }
+          
+          // Aktualizuj lokální timestamp po úspěšném zápisu
+          if (result.serverTimestamp) {
+            setLastModified(result.serverTimestamp);
+          }
           
           // Po úspěšném uložení znovu připoj listener
           const newUnsubscribe = subscribeToSync(
             syncCode,
-            ({ freezerData: newFreezerData, templates: newTemplates }) => {
-              console.log('☁️ Přijata data z Firebase');
+            ({ freezerData: newFreezerData, templates: newTemplates, lastModified: serverTimestamp }) => {
+              console.log('☁️ Přijata data z Firebase, timestamp:', new Date(serverTimestamp).toISOString());
               setFreezerData(newFreezerData);
               setTemplates(newTemplates);
+              setLastModified(serverTimestamp);
               saveFreezerData(newFreezerData);
               saveItemTemplates(newTemplates);
             },
@@ -117,10 +139,11 @@ function App() {
           // Při chybě znovu připoj listener
           const newUnsubscribe = subscribeToSync(
             syncCode,
-            ({ freezerData: newFreezerData, templates: newTemplates }) => {
-              console.log('☁️ Přijata data z Firebase');
+            ({ freezerData: newFreezerData, templates: newTemplates, lastModified: serverTimestamp }) => {
+              console.log('☁️ Přijata data z Firebase, timestamp:', new Date(serverTimestamp).toISOString());
               setFreezerData(newFreezerData);
               setTemplates(newTemplates);
+              setLastModified(serverTimestamp);
               saveFreezerData(newFreezerData);
               saveItemTemplates(newTemplates);
             },
@@ -184,7 +207,14 @@ function App() {
     // Hned uložíme do Firebase a počkáme na potvrzení
     if (syncCode && firebaseConfigured) {
       try {
-        await syncDataToFirebase(syncCode, newFreezerData, newTemplates);
+        const newTimestamp = Date.now();
+        const result = await syncDataToFirebase(syncCode, newFreezerData, newTemplates, newTimestamp);
+        if (result.success && result.serverTimestamp) {
+          setLastModified(result.serverTimestamp);
+        } else if (!result.success) {
+          alert(result.reason);
+          return; // Nepokračuj, listener načte aktuální data
+        }
       } catch (error) {
         console.error('Chyba při ukládání do Firebase:', error);
       }
@@ -196,14 +226,16 @@ function App() {
         if (!unsubscribeRef.current) {
           const newUnsubscribe = subscribeToSync(
             syncCode,
-            ({ freezerData: newFreezerData, templates: newTemplates }) => {
+            ({ freezerData: newFreezerData, templates: newTemplates, lastModified: serverTimestamp }) => {
               setFreezerData(newFreezerData);
               setTemplates(newTemplates);
+              setLastModified(serverTimestamp);
               saveFreezerData(newFreezerData);
               saveItemTemplates(newTemplates);
             },
             () => {
               alert('⚠️ Synchronizační kód již není platný!\n\nAdmin změnil synchronizační kód. Budete odpojeni a můžete zadat nový kód.');
+              initialSyncDone.current = false;
               clearSyncCode();
               setSyncCode(null);
               setIsSyncing(false);
@@ -248,7 +280,14 @@ function App() {
     // Uložíme do Firebase a počkáme na potvrzení
     if (syncCode && firebaseConfigured) {
       try {
-        await syncDataToFirebase(syncCode, newFreezerData, templates);
+        const newTimestamp = Date.now();
+        const result = await syncDataToFirebase(syncCode, newFreezerData, templates, newTimestamp);
+        if (result.success && result.serverTimestamp) {
+          setLastModified(result.serverTimestamp);
+        } else if (!result.success) {
+          alert(result.reason);
+          return;
+        }
       } catch (error) {
         console.error('Chyba při ukládání do Firebase:', error);
       }
@@ -260,14 +299,16 @@ function App() {
         if (!unsubscribeRef.current) {
           const newUnsubscribe = subscribeToSync(
             syncCode,
-            ({ freezerData: newFreezerData, templates: newTemplates }) => {
+            ({ freezerData: newFreezerData, templates: newTemplates, lastModified: serverTimestamp }) => {
               setFreezerData(newFreezerData);
               setTemplates(newTemplates);
+              setLastModified(serverTimestamp);
               saveFreezerData(newFreezerData);
               saveItemTemplates(newTemplates);
             },
             () => {
               alert('⚠️ Synchronizační kód již není platný!\n\nAdmin změnil synchronizační kód. Budete odpojeni a můžete zadat nový kód.');
+              initialSyncDone.current = false;
               clearSyncCode();
               setSyncCode(null);
               setIsSyncing(false);
@@ -305,7 +346,14 @@ function App() {
     // Uložíme do Firebase a počkáme na potvrzení
     if (syncCode && firebaseConfigured) {
       try {
-        await syncDataToFirebase(syncCode, newFreezerData, templates);
+        const newTimestamp = Date.now();
+        const result = await syncDataToFirebase(syncCode, newFreezerData, templates, newTimestamp);
+        if (result.success && result.serverTimestamp) {
+          setLastModified(result.serverTimestamp);
+        } else if (!result.success) {
+          alert(result.reason);
+          return;
+        }
       } catch (error) {
         console.error('Chyba při ukládání do Firebase:', error);
       }
@@ -488,8 +536,15 @@ function App() {
     if (syncCode && firebaseConfigured) {
       console.log('☁️ Ukládání do Firebase...');
       try {
-        await syncDataToFirebase(syncCode, newFreezerData, templates);
-        console.log('✓ Uloženo do Firebase');
+        const newTimestamp = Date.now();
+        const result = await syncDataToFirebase(syncCode, newFreezerData, templates, newTimestamp);
+        if (result.success && result.serverTimestamp) {
+          setLastModified(result.serverTimestamp);
+          console.log('✓ Uloženo do Firebase');
+        } else if (!result.success) {
+          alert(result.reason);
+          return; // Listener načte aktuální data
+        }
       } catch (error) {
         console.error('❌ Chyba při ukládání do Firebase:', error);
         alert('Varování: Data uložena lokálně, ale Firebase sync selhal!');
@@ -502,10 +557,11 @@ function App() {
         if (!unsubscribeRef.current) {
           const newUnsubscribe = subscribeToSync(
             syncCode,
-            ({ freezerData: newFreezerData, templates: newTemplates }) => {
-              console.log('☁️ Přijata data z Firebase');
+            ({ freezerData: newFreezerData, templates: newTemplates, lastModified: serverTimestamp }) => {
+              console.log('☁️ Přijata data z Firebase, timestamp:', new Date(serverTimestamp).toISOString());
               setFreezerData(newFreezerData);
               setTemplates(newTemplates);
+              setLastModified(serverTimestamp);
               saveFreezerData(newFreezerData);
               saveItemTemplates(newTemplates);
             },
@@ -552,7 +608,11 @@ function App() {
     setShowSyncModal(null);
     if (firebaseConfigured) {
       // Uložíme data včetně hash hesla
-      await syncDataToFirebase(code, freezerData, templates, passwordHash);
+      const newTimestamp = Date.now();
+      const result = await syncDataToFirebase(code, freezerData, templates, newTimestamp, passwordHash);
+      if (result.success && result.serverTimestamp) {
+        setLastModified(result.serverTimestamp);
+      }
     }
   };
 

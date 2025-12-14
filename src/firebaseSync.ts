@@ -47,16 +47,41 @@ export const syncDataToFirebase = async (
   syncCode: string,
   freezerData: FreezerData,
   templates: ItemTemplate[],
+  localTimestamp: number,
   adminPasswordHash?: string
-) => {
+): Promise<{ success: boolean; serverTimestamp?: number; reason?: string }> => {
   if (!db) {
     throw new Error('Firebase není nakonfigurován');
   }
 
   const dataRef = doc(db, 'sync-data', syncCode.toUpperCase());
+  
+  // Přečti aktuální data z Firebase
+  const snapshot = await getDoc(dataRef);
+  
+  if (snapshot.exists()) {
+    const serverData = snapshot.data();
+    const serverTimestamp = serverData.lastModified || 0;
+    
+    // Pokud máme starší data než server, odmítni zápis
+    if (localTimestamp < serverTimestamp) {
+      console.warn('⚠️ Zápis odmítnut: lokální data jsou starší než server', {
+        local: new Date(localTimestamp).toISOString(),
+        server: new Date(serverTimestamp).toISOString()
+      });
+      return { 
+        success: false, 
+        serverTimestamp,
+        reason: 'Lokální data jsou starší než data v databázi. Načítám aktuální verzi...'
+      };
+    }
+  }
+  
+  const newTimestamp = Date.now();
   const data: any = {
     freezerData,
     templates,
+    lastModified: newTimestamp,
     lastUpdated: new Date().toISOString()
   };
   
@@ -66,11 +91,14 @@ export const syncDataToFirebase = async (
   }
   
   await setDoc(dataRef, data, { merge: true });
+  console.log('✅ Data uložena do Firebase s timestamp:', new Date(newTimestamp).toISOString());
+  
+  return { success: true, serverTimestamp: newTimestamp };
 };
 
 export const subscribeToSync = (
   syncCode: string,
-  onDataUpdate: (data: { freezerData: FreezerData; templates: ItemTemplate[] }) => void,
+  onDataUpdate: (data: { freezerData: FreezerData; templates: ItemTemplate[]; lastModified: number }) => void,
   onInvalidated?: () => void
 ) => {
   if (!db) {
@@ -91,7 +119,8 @@ export const subscribeToSync = (
       
       onDataUpdate({
         freezerData: data.freezerData,
-        templates: data.templates
+        templates: data.templates,
+        lastModified: data.lastModified || Date.now()
       });
     }
   });
