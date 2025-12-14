@@ -383,22 +383,28 @@ function App() {
       clearTimeout(syncTimeoutRef.current);
     }
 
-    // Odeber ze zdroje
+    // Deep copy všech dat
     const newFreezerData: FreezerData = {
-      small: { ...freezerData.small },
-      large: { ...freezerData.large }
+      small: Object.fromEntries(
+        Object.entries(freezerData.small).map(([id, items]) => [id, [...items]])
+      ) as { [drawerId: number]: Item[] },
+      large: Object.fromEntries(
+        Object.entries(freezerData.large).map(([id, items]) => [id, [...items]])
+      ) as { [drawerId: number]: Item[] }
     };
     
-    newFreezerData[sourceFreezerType] = {
-      ...newFreezerData[sourceFreezerType],
-      [sourceDrawerId]: newFreezerData[sourceFreezerType][sourceDrawerId].filter(item => item.id !== itemId)
-    };
+    // Odeber ze zdroje
+    newFreezerData[sourceFreezerType][sourceDrawerId] = 
+      newFreezerData[sourceFreezerType][sourceDrawerId].filter(item => item.id !== itemId);
 
     // Přidej do cíle
-    newFreezerData[targetFreezer] = {
-      ...newFreezerData[targetFreezer],
-      [targetDrawer]: [...(newFreezerData[targetFreezer][targetDrawer] || []), sourceItem]
-    };
+    if (!newFreezerData[targetFreezer][targetDrawer]) {
+      newFreezerData[targetFreezer][targetDrawer] = [];
+    }
+    newFreezerData[targetFreezer][targetDrawer] = [
+      ...newFreezerData[targetFreezer][targetDrawer], 
+      sourceItem
+    ];
 
     saveFreezerData(newFreezerData);
     setFreezerData(newFreezerData);
