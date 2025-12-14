@@ -16,7 +16,8 @@ function App() {
   const [showSyncModal, setShowSyncModal] = useState<'generate' | 'enter' | null>(null);
   const [showDisconnectModal, setShowDisconnectModal] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
-  const isLocalUpdateRef = useRef(false);
+  const unsubscribeRef = useRef<(() => void) | null>(null);
+  const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const firebaseConfigured = isFirebaseConfigured();
 
   useEffect(() => {
@@ -32,52 +33,102 @@ function App() {
     if (!syncCode || !firebaseConfigured) return;
 
     setIsSyncing(true);
-    const unsubscribe = subscribeToSync(
-      syncCode, 
-      ({ freezerData: newFreezerData, templates: newTemplates }) => {
-        // Ignoruj Firebase aktualizace pokud právě probíhá lokální úprava
-        if (isLocalUpdateRef.current) {
-          return;
+    
+    const setupListener = () => {
+      const unsubscribe = subscribeToSync(
+        syncCode, 
+        ({ freezerData: newFreezerData, templates: newTemplates }) => {
+          setFreezerData(newFreezerData);
+          setTemplates(newTemplates);
+          saveFreezerData(newFreezerData);
+          saveItemTemplates(newTemplates);
+        },
+        () => {
+          // Callback když je kód invalidován
+          alert('⚠️ Synchronizační kód již není platný!\n\nAdmin změnil synchronizační kód. Budete odpojeni a můžete zadat nový kód.');
+          clearSyncCode();
+          setSyncCode(null);
+          setIsSyncing(false);
+          setShowSyncModal('enter');
         }
-        
-        setFreezerData(newFreezerData);
-        setTemplates(newTemplates);
-        saveFreezerData(newFreezerData);
-        saveItemTemplates(newTemplates);
-      },
-      () => {
-        // Callback když je kód invalidován
-        alert('⚠️ Synchronizační kód již není platný!\n\nAdmin změnil synchronizační kód. Budete odpojeni a můžete zadat nový kód.');
-        clearSyncCode();
-        setSyncCode(null);
-        setIsSyncing(false);
-        setShowSyncModal('enter');
-      }
-    );
+      );
+      unsubscribeRef.current = unsubscribe;
+    };
+    
+    setupListener();
 
-    return () => unsubscribe();
+    return () => {
+      if (unsubscribeRef.current) {
+        unsubscribeRef.current();
+      }
+    };
   }, [syncCode, firebaseConfigured]);
 
   // Auto-sync when data changes
   useEffect(() => {
     if (syncCode && isSyncing && firebaseConfigured) {
-      // Označ že probíhá lokální změna
-      isLocalUpdateRef.current = true;
+      // Zruš předchozí timeout pokud existuje
+      if (syncTimeoutRef.current) {
+        clearTimeout(syncTimeoutRef.current);
+      }
       
-      const timeoutId = setTimeout(async () => {
-        try {
-          await syncDataToFirebase(syncCode, freezerData, templates);
-          // Po úspěšném uložení počkej chvíli a pak znovu povol Firebase listener
-          setTimeout(() => {
-            isLocalUpdateRef.current = false;
-          }, 500);
-        } catch (error) {
-          console.error(error);
-          isLocalUpdateRef.current = false;
+      syncTimeoutRef.current = setTimeout(async () => {
+        // Odpoj listener před zápisem
+        if (unsubscribeRef.current) {
+          unsubscribeRef.current();
+          unsubscribeRef.current = null;
         }
-      }, 1000); // Debounce 1 sekunda
+        
+        try {
+          // Ulož data do Firebase a počkej na potvrzení
+          await syncDataToFirebase(syncCode, freezerData, templates);
+          
+          // Po úspěšném uložení znovu připoj listener
+          const newUnsubscribe = subscribeToSync(
+            syncCode,
+            ({ freezerData: newFreezerData, templates: newTemplates }) => {
+              setFreezerData(newFreezerData);
+              setTemplates(newTemplates);
+              saveFreezerData(newFreezerData);
+              saveItemTemplates(newTemplates);
+            },
+            () => {
+              alert('⚠️ Synchronizační kód již není platný!\n\nAdmin změnil synchronizační kód. Budete odpojeni a můžete zadat nový kód.');
+              clearSyncCode();
+              setSyncCode(null);
+              setIsSyncing(false);
+              setShowSyncModal('enter');
+            }
+          );
+          unsubscribeRef.current = newUnsubscribe;
+        } catch (error) {
+          console.error('Chyba při synchronizaci:', error);
+          // Při chybě znovu připoj listener
+          const newUnsubscribe = subscribeToSync(
+            syncCode,
+            ({ freezerData: newFreezerData, templates: newTemplates }) => {
+              setFreezerData(newFreezerData);
+              setTemplates(newTemplates);
+              saveFreezerData(newFreezerData);
+              saveItemTemplates(newTemplates);
+            },
+            () => {
+              alert('⚠️ Synchronizační kód již není platný!');
+              clearSyncCode();
+              setSyncCode(null);
+              setIsSyncing(false);
+              setShowSyncModal('enter');
+            }
+          );
+          unsubscribeRef.current = newUnsubscribe;
+        }
+      }, 800); // Debounce 800 ms
       
-      return () => clearTimeout(timeoutId);
+      return () => {
+        if (syncTimeoutRef.current) {
+          clearTimeout(syncTimeoutRef.current);
+        }
+      };
     }
   }, [freezerData, templates, syncCode, isSyncing, firebaseConfigured]);
 
