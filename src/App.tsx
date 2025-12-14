@@ -209,26 +209,35 @@ function App() {
     
     try {
       const newTimestamp = Date.now();
+      console.log('⏱️ Vytvořen nový timestamp:', newTimestamp);
+      
       const result = await syncDataToFirebase(syncCode, freezerData, templates, newTimestamp);
       console.log('📥 Odpověď z Firebase:', result);
       
       if (result.success && result.serverTimestamp) {
+        console.log('✅ Úspěch! Data odeslána do cloudu');
         setLastModified(result.serverTimestamp);
         setHasUnsavedChanges(false);
         setChangeCount(0);
-        console.log('✅ Data úspěšně odeslána do cloudu');
         setSuccessMessage('✅ Změny byly úspěšně odeslány do cloudu');
         setTimeout(() => setSuccessMessage(null), 5000);
       } else if (!result.success) {
+        console.error('❌ Firebase vrátil chybu:', result.reason);
         const errorMsg = result.reason || 'Neznámá chyba';
         setErrorMessage(errorMsg);
         setTimeout(() => setErrorMessage(null), 10000);
+        // Ponechat hasUnsavedChanges=true aby uživatel mohl zkusit znovu
+      } else {
+        console.error('⚠️ Neočekávaná odpověď z Firebase:', result);
+        setErrorMessage('Neočekávaná odpověď z databáze. Zkuste to znovu.');
+        setTimeout(() => setErrorMessage(null), 10000);
       }
     } catch (error) {
-      console.error('❌ Chyba při odesílání do Firebase:', error);
+      console.error('❌ Exception při odesílání do Firebase:', error);
       const errorMsg = error instanceof Error ? error.message : 'Neznámá chyba';
       setErrorMessage(`Chyba při odesílání dat: ${errorMsg}`);
       setTimeout(() => setErrorMessage(null), 10000);
+      // Ponechat hasUnsavedChanges=true aby uživatel mohl zkusit znovu
     }
   };
 
