@@ -9,17 +9,20 @@ interface DrawerProps {
   onAddItem: (drawerId: number, item: Item) => void;
   onUpdateItem: (drawerId: number, itemId: string, quantity: number) => void;
   onDeleteItem: (drawerId: number, itemId: string) => void;
+  onEditItem: (oldName: string, newName: string) => void;
   isExpanded: boolean;
   onToggle: () => void;
 }
 
-function Drawer({ drawerId, items, templates, onAddItem, onUpdateItem, onDeleteItem, isExpanded, onToggle }: DrawerProps) {
+function Drawer({ drawerId, items, templates, onAddItem, onUpdateItem, onDeleteItem, onEditItem, isExpanded, onToggle }: DrawerProps) {
   const [selectedTemplate, setSelectedTemplate] = useState('');
   const [customName, setCustomName] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [showAddForm, setShowAddForm] = useState(false);
   const [sortBy, setSortBy] = useState<'name' | 'quantity'>('name');
   const [sortDescending, setSortDescending] = useState(false);
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState('');
 
   const handleAdd = () => {
     const name = selectedTemplate === 'custom' ? customName : templates.find(t => t.id === selectedTemplate)?.name;
@@ -135,13 +138,70 @@ function Drawer({ drawerId, items, templates, onAddItem, onUpdateItem, onDeleteI
                 }).map(item => (
                   <div key={item.id} className="item">
                     <div className="item-info">
-                      <span className="item-name">{item.name}</span>
+                      {editingItemId === item.id ? (
+                        <input
+                          type="text"
+                          className="edit-item-input"
+                          value={editingName}
+                          onChange={(e) => setEditingName(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && editingName.trim()) {
+                              onEditItem(item.name, editingName.trim());
+                              setEditingItemId(null);
+                              setEditingName('');
+                            } else if (e.key === 'Escape') {
+                              setEditingItemId(null);
+                              setEditingName('');
+                            }
+                          }}
+                          autoFocus
+                        />
+                      ) : (
+                        <span className="item-name">{item.name}</span>
+                      )}
                       <span className="item-quantity">{item.quantity} ks</span>
                     </div>
                     <div className="item-actions">
-                      <button onClick={() => onUpdateItem(drawerId, item.id, item.quantity - 1)}>−</button>
-                      <button onClick={() => onUpdateItem(drawerId, item.id, item.quantity + 1)}>+</button>
-                      <button onClick={() => onDeleteItem(drawerId, item.id)}>🗑️</button>
+                      {editingItemId === item.id ? (
+                        <>
+                          <button
+                            onClick={() => {
+                              if (editingName.trim()) {
+                                onEditItem(item.name, editingName.trim());
+                                setEditingItemId(null);
+                                setEditingName('');
+                              }
+                            }}
+                            title="Uložit"
+                          >
+                            ✔️
+                          </button>
+                          <button
+                            onClick={() => {
+                              setEditingItemId(null);
+                              setEditingName('');
+                            }}
+                            title="Zrušit"
+                          >
+                            ❌
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button onClick={() => onUpdateItem(drawerId, item.id, item.quantity - 1)}>−</button>
+                          <button onClick={() => onUpdateItem(drawerId, item.id, item.quantity + 1)}>+</button>
+                          <button
+                            onClick={() => {
+                              setEditingItemId(item.id);
+                              setEditingName(item.name);
+                            }}
+                            title="Editovat název"
+                          >
+                            ✏️
+                          </button>
+                          <button onClick={() => onDeleteItem(drawerId, item.id)}>🗑️</button>
+                        </>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -163,11 +223,12 @@ interface FreezerProps {
   onAddItem: (drawerId: number, item: Item) => void;
   onUpdateItem: (drawerId: number, itemId: string, quantity: number) => void;
   onDeleteItem: (drawerId: number, itemId: string) => void;
+  onEditItem: (oldName: string, newName: string) => void;
   openDrawerId: string | null;
   onToggleDrawer: (drawerId: number) => void;
 }
 
-export default function Freezer({ title, drawerCount, freezerType, drawers, templates, onAddItem, onUpdateItem, onDeleteItem, openDrawerId, onToggleDrawer }: FreezerProps) {
+export default function Freezer({ title, drawerCount, freezerType, drawers, templates, onAddItem, onUpdateItem, onDeleteItem, onEditItem, openDrawerId, onToggleDrawer }: FreezerProps) {
   return (
     <div className="freezer">
       <h2>{title} ({drawerCount} šuplíků)</h2>
@@ -181,6 +242,7 @@ export default function Freezer({ title, drawerCount, freezerType, drawers, temp
             onAddItem={onAddItem}
             onUpdateItem={onUpdateItem}
             onDeleteItem={onDeleteItem}
+            onEditItem={onEditItem}
             isExpanded={openDrawerId === `${freezerType}-${drawerId}`}
             onToggle={() => onToggleDrawer(drawerId)}
           />

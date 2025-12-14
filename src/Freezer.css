@@ -77,6 +77,21 @@
   font-weight: 500;
 }
 
+.edit-item-input {
+  flex: 1;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.95em;
+  border: 2px solid #646cff;
+  border-radius: 6px;
+  background-color: #1a1a1a;
+  color: #fff;
+}
+
+.edit-item-input:focus {
+  outline: none;
+  border-color: #61dafb;
+}
+
 .toggle-drawer-button {
   padding: 0.3em 0.5em;
   min-width: 35px;

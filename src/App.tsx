@@ -337,6 +337,31 @@ function App() {
     setTemplates(prev => prev.map(t => t.id === id ? { ...t, name: newName } : t));
   };
 
+  const handleEditItemName = (oldName: string, newName: string) => {
+    if (oldName === newName) return;
+    
+    // Aktualizuj všechny položky se starým názvem ve všech šuplících
+    const newFreezerData: FreezerData = {
+      small: Object.fromEntries(
+        Object.entries(freezerData.small).map(([drawerId, items]) => [
+          drawerId,
+          items.map((item: Item) => item.name === oldName ? { ...item, name: newName } : item)
+        ])
+      ) as { [drawerId: number]: Item[] },
+      large: Object.fromEntries(
+        Object.entries(freezerData.large).map(([drawerId, items]) => [
+          drawerId,
+          items.map((item: Item) => item.name === oldName ? { ...item, name: newName } : item)
+        ])
+      ) as { [drawerId: number]: Item[] }
+    };
+    
+    setFreezerData(newFreezerData);
+    
+    // Aktualizuj template se stejným názvem
+    setTemplates(prev => prev.map(t => t.name === oldName ? { ...t, name: newName } : t));
+  };
+
   const handleDeleteTemplate = (id: string) => {
     setTemplates(prev => prev.filter(t => t.id !== id));
   };
@@ -510,6 +535,7 @@ function App() {
         onAddItem={(drawerId, item) => handleAddItem('small', drawerId, item)}
         onUpdateItem={(drawerId, itemId, quantity) => handleUpdateItem('small', drawerId, itemId, quantity)}
         onDeleteItem={(drawerId, itemId) => handleDeleteItem('small', drawerId, itemId)}
+        onEditItem={handleEditItemName}
         openDrawerId={openSection?.startsWith('small-') ? openSection : null}
         onToggleDrawer={(drawerId) => {
           const sectionId = `small-${drawerId}`;
@@ -526,6 +552,7 @@ function App() {
         onAddItem={(drawerId, item) => handleAddItem('large', drawerId, item)}
         onUpdateItem={(drawerId, itemId, quantity) => handleUpdateItem('large', drawerId, itemId, quantity)}
         onDeleteItem={(drawerId, itemId) => handleDeleteItem('large', drawerId, itemId)}
+        onEditItem={handleEditItemName}
         openDrawerId={openSection?.startsWith('large-') ? openSection : null}
         onToggleDrawer={(drawerId) => {
           const sectionId = `large-${drawerId}`;
