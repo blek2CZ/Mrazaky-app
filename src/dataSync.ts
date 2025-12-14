@@ -34,6 +34,11 @@ export const importData = (file: File): Promise<{ freezerData: FreezerData; temp
           throw new Error('Neplatný formát souboru');
         }
         
+        // Migrace starých dat - přidej smallMama, pokud neexistuje
+        if (!data.freezerData.smallMama) {
+          data.freezerData.smallMama = { 1: [] };
+        }
+        
         resolve({
           freezerData: data.freezerData,
           templates: data.templates,
