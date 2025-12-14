@@ -26,7 +26,7 @@ function App() {
   const [changeCount, setChangeCount] = useState(0);
   const [lastModified, setLastModified] = useState<number>(() => {
     const stored = localStorage.getItem('mrazaky-lastModified');
-    return stored ? parseInt(stored) : Date.now();
+    return stored ? parseInt(stored) : 0; // 0 = ještě nebyly načteny data z Firebase
   });
   const initialSyncDone = useRef<boolean>(false);
   const firebaseConfigured = isFirebaseConfigured();
