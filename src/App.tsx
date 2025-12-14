@@ -126,14 +126,14 @@ function App() {
         saveItemTemplates(data.templates);
         console.log('✅ Data úspěšně načtena z cloudu');
         if (showSuccessMessage) {
-          setSuccessMessage('✅ Nová data byla načtena z cloudu');
+          setSuccessMessage('Nová data byla načtena z cloudu');
           setTimeout(() => setSuccessMessage(null), 5000);
         }
       } else {
         console.log('✅ Lokální data jsou aktuální nebo novější než server');
         if (showSuccessMessage) {
           if (data.lastModified === lastModified) {
-            setSuccessMessage('✅ Data jsou aktuální - stejná verze jako v cloudu');
+            setSuccessMessage('Data jsou aktuální - stejná verze jako v cloudu');
             setTimeout(() => setSuccessMessage(null), 5000);
           } else {
             // Lokální data jsou novější - nastavit jako neuložené změny
@@ -142,7 +142,7 @@ function App() {
             if (changeCount === 0) {
               setChangeCount(1); // Nastavit alespoň 1 změnu aby se zobrazilo tlačítko
             }
-            setSuccessMessage('✅ Lokální data jsou novější než v cloudu - použijte tlačítko pro odeslání');
+            setSuccessMessage('Lokální data jsou novější než v cloudu - použijte tlačítko pro odeslání');
             setTimeout(() => setSuccessMessage(null), 6000);
           }
         }
@@ -219,7 +219,7 @@ function App() {
         setLastModified(result.serverTimestamp);
         setHasUnsavedChanges(false);
         setChangeCount(0);
-        setSuccessMessage('✅ Změny byly úspěšně odeslány do cloudu');
+        setSuccessMessage('Změny byly úspěšně odeslány do cloudu');
         setTimeout(() => setSuccessMessage(null), 5000);
       } else if (!result.success) {
         console.error('❌ Firebase vrátil chybu:', result.reason);
