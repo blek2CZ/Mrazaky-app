@@ -139,6 +139,7 @@ export default function TemplatesManager({ templates, onAddTemplate, onEditTempl
                 onChange={(e) => setNewTemplateName(e.target.value)}
                 placeholder="Název nové položky"
                 onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
+                autoFocus
               />
               <button onClick={handleAdd}>Přidat</button>
               <button onClick={() => { setShowAddForm(false); setNewTemplateName(''); }}>Zrušit</button>

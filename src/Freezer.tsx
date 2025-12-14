@@ -93,6 +93,7 @@ function Drawer({ drawerId, items, templates, onAddItem, onUpdateItem, onDeleteI
                 value={customName}
                 onChange={(e) => setCustomName(e.target.value)}
                 placeholder="Zadejte název"
+                autoFocus
               />
             </div>
           )}
