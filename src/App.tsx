@@ -5,7 +5,7 @@ import SyncModal from './SyncModal';
 import { FreezerData, Item, ItemTemplate } from './types';
 import { loadFreezerData, saveFreezerData, loadItemTemplates, saveItemTemplates } from './storage';
 import { exportData, importData } from './dataSync';
-import { getSyncCode, saveSyncCode, clearSyncCode, syncDataToFirebase, syncDataToFirebaseForce, subscribeToSync, isFirebaseConfigured, invalidateSyncCode, getAdminPasswordHash } from './firebaseSync';
+import { getSyncCode, saveSyncCode, clearSyncCode, syncDataToFirebase, syncDataToFirebaseForce, fetchDataFromFirebase, isFirebaseConfigured, invalidateSyncCode, getAdminPasswordHash } from './firebaseSync';
 import { verifyPasswordHash } from './adminAuth';
 import './App.css';
 
@@ -17,6 +17,8 @@ function App() {
   const [showDisconnectModal, setShowDisconnectModal] = useState(false);
   const [showSyncConfirm, setShowSyncConfirm] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isCheckingForUpdates, setIsCheckingForUpdates] = useState(false);
+  const [lastChecked, setLastChecked] = useState<number | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [openSection, setOpenSection] = useState<string | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -25,8 +27,6 @@ function App() {
     const stored = localStorage.getItem('mrazaky-lastModified');
     return stored ? parseInt(stored) : Date.now();
   });
-  const unsubscribeRef = useRef<(() => void) | null>(null);
-  const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const initialSyncDone = useRef<boolean>(false);
   const firebaseConfigured = isFirebaseConfigured();
 
@@ -42,81 +42,98 @@ function App() {
     localStorage.setItem('mrazaky-lastModified', lastModified.toString());
   }, [lastModified]);
 
-  // Firebase synchronizace
-  useEffect(() => {
-    if (!syncCode || !firebaseConfigured) return;
+  // Funkce pro kontrolu a načtení dat z Firebase
+  const checkForUpdates = async (showSuccessMessage: boolean = false) => {
+    if (!syncCode || !firebaseConfigured) {
+      setErrorMessage('Synchronizace není k dispozici.');
+      setTimeout(() => setErrorMessage(null), 5000);
+      return;
+    }
 
-    setIsSyncing(true);
-    
-    const setupListener = () => {
-      try {
-        const unsubscribe = subscribeToSync(
-          syncCode, 
-          ({ freezerData: newFreezerData, templates: newTemplates, lastModified: serverTimestamp }) => {
-            try {
-              console.log('☁️ Přijata data z Firebase, timestamp:', new Date(serverTimestamp).toISOString());
-              // Migrace dat - přidej smallMama, pokud neexistuje
-              if (!newFreezerData.smallMama) {
-                newFreezerData.smallMama = { 1: [] };
-              }
-              
-              // Upozorni uživatele, pokud má neuložené změny
-              if (hasUnsavedChanges && initialSyncDone.current) {
-                const confirm = window.confirm(
-                  '⚠️ Někdo jiný změnil data v cloudu!\n\n' +
-                  'Máte neuložené lokální změny. Co chcete udělat?\n\n' +
-                  'OK = Načíst data z cloudu (ztratíte lokální změny)\n' +
-                  'Zrušit = Ponechat lokální data'
-                );
-                if (!confirm) {
-                  return; // Ponechat lokální data
-                }
-                setHasUnsavedChanges(false);
-                setChangeCount(0);
-              }
-              
-              setFreezerData(newFreezerData);
-              setTemplates(newTemplates);
-              setLastModified(serverTimestamp);
-              saveFreezerData(newFreezerData);
-              saveItemTemplates(newTemplates);
-              // Označ, že první sync proběhl
-              if (!initialSyncDone.current) {
-                initialSyncDone.current = true;
-                console.log('✅ První synchronizace dokončena');
-              }
-            } catch (error) {
-              console.error('❌ Chyba při zpracování dat z Firebase:', error);
-              setErrorMessage('Chyba při načítání dat z cloudu. Data mohou být neúplná.');
-              setTimeout(() => setErrorMessage(null), 5000);
-            }
-          },
-          () => {
-            // Callback když je kód invalidován
-            setErrorMessage('Synchronizační kód již není platný. Admin změnil kód.');
-            clearSyncCode();
-            setSyncCode(null);
-            setIsSyncing(false);
-            setShowSyncModal('enter');
-            setTimeout(() => setErrorMessage(null), 5000);
-          }
-        );
-        unsubscribeRef.current = unsubscribe;
-      } catch (error) {
-        console.error('❌ Chyba při nastavení Firebase listeneru:', error);
-        setErrorMessage('Nepodařilo se připojit k synchronizaci. Zkontrolujte připojení k internetu.');
-        setIsSyncing(false);
+    setIsCheckingForUpdates(true);
+
+    try {
+      const result = await fetchDataFromFirebase(syncCode);
+
+      if (!result.success) {
+        if (result.invalidated) {
+          setErrorMessage('Synchronizační kód již není platný. Admin změnil kód.');
+          clearSyncCode();
+          setSyncCode(null);
+          setIsSyncing(false);
+          setShowSyncModal('enter');
+        } else {
+          setErrorMessage(result.error || 'Nepodařilo se načíst data z cloudu.');
+        }
         setTimeout(() => setErrorMessage(null), 5000);
+        setIsCheckingForUpdates(false);
+        return;
       }
-    };
-    
-    setupListener();
 
-    return () => {
-      if (unsubscribeRef.current) {
-        unsubscribeRef.current();
+      const { data } = result;
+      if (!data) {
+        setErrorMessage('Data z cloudu jsou neplatná.');
+        setTimeout(() => setErrorMessage(null), 5000);
+        setIsCheckingForUpdates(false);
+        return;
       }
-    };
+
+      // Migrace dat - přidej smallMama, pokud neexistuje
+      if (!data.freezerData.smallMama) {
+        data.freezerData.smallMama = { 1: [] };
+      }
+
+      // Porovnej timestamp
+      if (data.lastModified > lastModified) {
+        console.log('🔄 Nová data nalezena:', {
+          local: new Date(lastModified).toISOString(),
+          server: new Date(data.lastModified).toISOString()
+        });
+
+        // Upozorni uživatele, pokud má neuložené změny
+        if (hasUnsavedChanges) {
+          const confirm = window.confirm(
+            '⚠️ V cloudu jsou novější data!\n\n' +
+            'Máte neuložené lokální změny. Co chcete udělat?\n\n' +
+            'OK = Načíst data z cloudu (ztratíte lokální změny)\n' +
+            'Zrušit = Ponechat lokální data'
+          );
+          if (!confirm) {
+            setLastChecked(Date.now());
+            setIsCheckingForUpdates(false);
+            return; // Ponechat lokální data
+          }
+          setHasUnsavedChanges(false);
+          setChangeCount(0);
+        }
+
+        setFreezerData(data.freezerData);
+        setTemplates(data.templates);
+        setLastModified(data.lastModified);
+        saveFreezerData(data.freezerData);
+        saveItemTemplates(data.templates);
+        console.log('✅ Data úspěšně načtena z cloudu');
+      } else if (showSuccessMessage) {
+        console.log('✅ Data jsou aktuální');
+      }
+
+      setLastChecked(Date.now());
+      setIsSyncing(true);
+      initialSyncDone.current = true;
+    } catch (error) {
+      console.error('❌ Chyba při kontrole dat:', error);
+      setErrorMessage('Chyba při kontrole dat z cloudu. Zkontrolujte připojení k internetu.');
+      setTimeout(() => setErrorMessage(null), 5000);
+    } finally {
+      setIsCheckingForUpdates(false);
+    }
+  };
+
+  // Kontrola dat při startu aplikace
+  useEffect(() => {
+    if (syncCode && firebaseConfigured) {
+      checkForUpdates();
+    }
   }, [syncCode, firebaseConfigured]);
 
   // Manuální sync funkce
@@ -494,16 +511,6 @@ function App() {
           }
           return;
         }
-        
-        // Heslo OK - odpoj listener před zápisem
-        if (unsubscribeRef.current) {
-          unsubscribeRef.current();
-          unsubscribeRef.current = null;
-        }
-        
-        if (syncTimeoutRef.current) {
-          clearTimeout(syncTimeoutRef.current);
-        }
       }
       
       // Ulož lokálně
@@ -520,37 +527,6 @@ function App() {
           await syncDataToFirebaseForce(syncCode, importedFreezerData, importedTemplates, newTimestamp);
           setLastModified(newTimestamp);
           console.log('✅ Importovaná data nahraána do Firebase');
-          
-          // Znovu připoj listener
-          setTimeout(() => {
-            if (!unsubscribeRef.current) {
-              const newUnsubscribe = subscribeToSync(
-                syncCode,
-                ({ freezerData: newFreezerData, templates: newTemplates, lastModified: serverTimestamp }) => {
-                  console.log('☁️ Přijata data z Firebase, timestamp:', new Date(serverTimestamp).toISOString());
-                  // Migrace dat - přidej smallMama, pokud neexistuje
-                  if (!newFreezerData.smallMama) {
-                    newFreezerData.smallMama = { 1: [] };
-                  }
-                  setFreezerData(newFreezerData);
-                  setTemplates(newTemplates);
-                  setLastModified(serverTimestamp);
-                  saveFreezerData(newFreezerData);
-                  saveItemTemplates(newTemplates);
-                },
-                () => {
-                  alert('⚠️ Synchronizační kód již není platný!');
-                  initialSyncDone.current = false;
-                  clearSyncCode();
-                  setSyncCode(null);
-                  setIsSyncing(false);
-                  setShowSyncModal('enter');
-                }
-              );
-              unsubscribeRef.current = newUnsubscribe;
-            }
-          }, 100);
-          
           alert('✅ Data úspěšně importována a nahraána do databáze!');
         } catch (error) {
           console.error('Chyba při nahrávání do Firebase:', error);
@@ -717,34 +693,69 @@ function App() {
         </div>
       )}
 
-      {isSyncing && hasUnsavedChanges && (
+      {isSyncing && (
         <div style={{
           position: 'fixed',
           bottom: '20px',
           right: '20px',
-          zIndex: 1000
+          zIndex: 1000,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '10px',
+          alignItems: 'flex-end'
         }}>
+          {hasUnsavedChanges && (
+            <button
+              onClick={handleManualSync}
+              style={{
+                padding: '15px 30px',
+                fontSize: '16px',
+                fontWeight: 'bold',
+                backgroundColor: '#4CAF50',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                boxShadow: '0 4px 8px rgba(0,0,0,0.3)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px'
+              }}
+            >
+              <span style={{ fontSize: '20px' }}>☁️</span>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                <span>Odeslat změny do cloudu</span>
+                <span style={{ fontSize: '12px', opacity: 0.9 }}>({changeCount} {changeCount === 1 ? 'změna' : changeCount >= 2 && changeCount <= 4 ? 'změny' : 'změn'})</span>
+              </div>
+            </button>
+          )}
           <button
-            onClick={handleManualSync}
+            onClick={() => checkForUpdates(true)}
+            disabled={isCheckingForUpdates}
             style={{
-              padding: '15px 30px',
-              fontSize: '16px',
-              fontWeight: 'bold',
-              backgroundColor: '#4CAF50',
+              padding: '12px 20px',
+              fontSize: '14px',
+              fontWeight: '500',
+              backgroundColor: isCheckingForUpdates ? '#ccc' : '#2196F3',
               color: 'white',
               border: 'none',
               borderRadius: '8px',
-              cursor: 'pointer',
-              boxShadow: '0 4px 8px rgba(0,0,0,0.3)',
+              cursor: isCheckingForUpdates ? 'not-allowed' : 'pointer',
+              boxShadow: '0 3px 6px rgba(0,0,0,0.2)',
               display: 'flex',
               alignItems: 'center',
-              gap: '10px'
+              gap: '8px',
+              opacity: isCheckingForUpdates ? 0.6 : 1
             }}
           >
-            <span style={{ fontSize: '20px' }}>☁️</span>
+            <span style={{ fontSize: '18px' }}>{isCheckingForUpdates ? '⏳' : '🔄'}</span>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-              <span>Odeslat změny do cloudu</span>
-              <span style={{ fontSize: '12px', opacity: 0.9 }}>({changeCount} {changeCount === 1 ? 'změna' : changeCount >= 2 && changeCount <= 4 ? 'změny' : 'změn'})</span>
+              <span>{isCheckingForUpdates ? 'Kontroluji...' : 'Zkontrolovat nová data'}</span>
+              {lastChecked && !isCheckingForUpdates && (
+                <span style={{ fontSize: '11px', opacity: 0.8 }}>
+                  Naposledy: {new Date(lastChecked).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' })}
+                </span>
+              )}
             </div>
           </button>
         </div>

@@ -181,3 +181,47 @@ export const getAdminPasswordHash = async (syncCode: string): Promise<string | n
 export const isFirebaseConfigured = (): boolean => {
   return db !== null && firebaseConfig.apiKey !== "AIzaSyBOtExampleKey123456789";
 };
+
+export const fetchDataFromFirebase = async (
+  syncCode: string
+): Promise<{
+  success: boolean;
+  data?: { freezerData: FreezerData; templates: ItemTemplate[]; lastModified: number };
+  invalidated?: boolean;
+  error?: string;
+}> => {
+  if (!db) {
+    return { success: false, error: 'Firebase není nakonfigurován' };
+  }
+
+  try {
+    const dataRef = doc(db, 'sync-data', syncCode.toUpperCase());
+    const snapshot = await getDoc(dataRef);
+
+    if (!snapshot.exists()) {
+      return { success: false, error: 'Synchronizační kód nebyl nalezen' };
+    }
+
+    const serverData = snapshot.data();
+
+    // Kontrola, zda nebyl kód invalidován
+    if (serverData.invalidated) {
+      return { success: false, invalidated: true, error: 'Synchronizační kód byl invalidován' };
+    }
+
+    return {
+      success: true,
+      data: {
+        freezerData: serverData.freezerData,
+        templates: serverData.templates,
+        lastModified: serverData.lastModified || Date.now()
+      }
+    };
+  } catch (error) {
+    console.error('❌ Chyba při načítání dat z Firebase:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Neznámá chyba při načítání dat' 
+    };
+  }
+};
