@@ -132,7 +132,7 @@ function App() {
     }
   }, [freezerData, templates, syncCode, isSyncing, firebaseConfigured]);
 
-  const handleAddItem = (freezerType: 'small' | 'large', drawerId: number, item: Item) => {
+  const handleAddItem = async (freezerType: 'small' | 'large', drawerId: number, item: Item) => {
     // Odpoj listener před změnou aby nedošlo k race condition
     if (unsubscribeRef.current) {
       unsubscribeRef.current();
@@ -168,7 +168,16 @@ function App() {
       setTemplates(newTemplates);
     }
     
-    // Znovu připoj listener po malé prodlevě
+    // Hned uložíme do Firebase a počkáme na potvrzení
+    if (syncCode && firebaseConfigured) {
+      try {
+        await syncDataToFirebase(syncCode, newFreezerData, newTemplates);
+      } catch (error) {
+        console.error('Chyba při ukládání do Firebase:', error);
+      }
+    }
+    
+    // Znovu připoj listener po úspěšném uložení
     if (syncCode && firebaseConfigured) {
       setTimeout(() => {
         if (!unsubscribeRef.current) {
@@ -194,31 +203,125 @@ function App() {
     }
   };
 
-  const handleUpdateItem = (freezerType: 'small' | 'large', drawerId: number, itemId: string, quantity: number) => {
+  const handleUpdateItem = async (freezerType: 'small' | 'large', drawerId: number, itemId: string, quantity: number) => {
     if (quantity <= 0) {
-      handleDeleteItem(freezerType, drawerId, itemId);
+      await handleDeleteItem(freezerType, drawerId, itemId);
       return;
     }
 
-    setFreezerData(prev => ({
-      ...prev,
+    // Odpoj listener před změnou
+    if (unsubscribeRef.current) {
+      unsubscribeRef.current();
+      unsubscribeRef.current = null;
+    }
+    
+    if (syncTimeoutRef.current) {
+      clearTimeout(syncTimeoutRef.current);
+    }
+
+    const newFreezerData = {
+      ...freezerData,
       [freezerType]: {
-        ...prev[freezerType],
-        [drawerId]: prev[freezerType][drawerId].map(item =>
+        ...freezerData[freezerType],
+        [drawerId]: freezerData[freezerType][drawerId].map(item =>
           item.id === itemId ? { ...item, quantity } : item
         ),
       },
-    }));
+    };
+    
+    saveFreezerData(newFreezerData);
+    setFreezerData(newFreezerData);
+    
+    // Uložíme do Firebase a počkáme na potvrzení
+    if (syncCode && firebaseConfigured) {
+      try {
+        await syncDataToFirebase(syncCode, newFreezerData, templates);
+      } catch (error) {
+        console.error('Chyba při ukládání do Firebase:', error);
+      }
+    }
+    
+    // Znovu připoj listener
+    if (syncCode && firebaseConfigured) {
+      setTimeout(() => {
+        if (!unsubscribeRef.current) {
+          const newUnsubscribe = subscribeToSync(
+            syncCode,
+            ({ freezerData: newFreezerData, templates: newTemplates }) => {
+              setFreezerData(newFreezerData);
+              setTemplates(newTemplates);
+              saveFreezerData(newFreezerData);
+              saveItemTemplates(newTemplates);
+            },
+            () => {
+              alert('⚠️ Synchronizační kód již není platný!\n\nAdmin změnil synchronizační kód. Budete odpojeni a můžete zadat nový kód.');
+              clearSyncCode();
+              setSyncCode(null);
+              setIsSyncing(false);
+              setShowSyncModal('enter');
+            }
+          );
+          unsubscribeRef.current = newUnsubscribe;
+        }
+      }, 100);
+    }
   };
 
-  const handleDeleteItem = (freezerType: 'small' | 'large', drawerId: number, itemId: string) => {
-    setFreezerData(prev => ({
-      ...prev,
+  const handleDeleteItem = async (freezerType: 'small' | 'large', drawerId: number, itemId: string) => {
+    // Odpoj listener před změnou
+    if (unsubscribeRef.current) {
+      unsubscribeRef.current();
+      unsubscribeRef.current = null;
+    }
+    
+    if (syncTimeoutRef.current) {
+      clearTimeout(syncTimeoutRef.current);
+    }
+
+    const newFreezerData = {
+      ...freezerData,
       [freezerType]: {
-        ...prev[freezerType],
-        [drawerId]: prev[freezerType][drawerId].filter(item => item.id !== itemId),
+        ...freezerData[freezerType],
+        [drawerId]: freezerData[freezerType][drawerId].filter(item => item.id !== itemId),
       },
-    }));
+    };
+    
+    saveFreezerData(newFreezerData);
+    setFreezerData(newFreezerData);
+    
+    // Uložíme do Firebase a počkáme na potvrzení
+    if (syncCode && firebaseConfigured) {
+      try {
+        await syncDataToFirebase(syncCode, newFreezerData, templates);
+      } catch (error) {
+        console.error('Chyba při ukládání do Firebase:', error);
+      }
+    }
+    
+    // Znovu připoj listener
+    if (syncCode && firebaseConfigured) {
+      setTimeout(() => {
+        if (!unsubscribeRef.current) {
+          const newUnsubscribe = subscribeToSync(
+            syncCode,
+            ({ freezerData: newFreezerData, templates: newTemplates }) => {
+              setFreezerData(newFreezerData);
+              setTemplates(newTemplates);
+              saveFreezerData(newFreezerData);
+              saveItemTemplates(newTemplates);
+            },
+            () => {
+              alert('⚠️ Synchronizační kód již není platný!\n\nAdmin změnil synchronizační kód. Budete odpojeni a můžete zadat nový kód.');
+              clearSyncCode();
+              setSyncCode(null);
+              setIsSyncing(false);
+              setShowSyncModal('enter');
+            }
+          );
+          unsubscribeRef.current = newUnsubscribe;
+        }
+      }, 100);
+    }
   };
 
   const handleAddTemplate = (name: string) => {
