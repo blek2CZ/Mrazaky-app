@@ -1,0 +1,30 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!-- Pozadí -->
+  <rect width="512" height="512" fill="#2196f3" rx="80"/>
+  
+  <!-- Mrazák (lednice) -->
+  <rect x="120" y="80" width="272" height="352" fill="#ffffff" rx="20"/>
+  
+  <!-- Horní dveře -->
+  <rect x="130" y="90" width="252" height="140" fill="#e3f2fd" rx="15"/>
+  <circle cx="350" cy="160" r="8" fill="#2196f3"/>
+  
+  <!-- Dolní dveře -->
+  <rect x="130" y="240" width="252" height="182" fill="#e3f2fd" rx="15"/>
+  <circle cx="350" cy="330" r="8" fill="#2196f3"/>
+  
+  <!-- Mrazící vločky -->
+  <g fill="#2196f3" opacity="0.6">
+    <circle cx="180" cy="140" r="4"/>
+    <circle cx="200" cy="120" r="3"/>
+    <circle cx="220" cy="150" r="3"/>
+    <circle cx="180" cy="290" r="4"/>
+    <circle cx="210" cy="310" r="3"/>
+    <circle cx="240" cy="280" r="3"/>
+    <circle cx="190" cy="360" r="4"/>
+    <circle cx="220" cy="380" r="3"/>
+  </g>
+  
+  <!-- Stín/hloubka -->
+  <rect x="136" y="235" width="240" height="3" fill="#90caf9" opacity="0.5"/>
+</svg>
