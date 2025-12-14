@@ -178,23 +178,41 @@ export const syncDataToFirebaseForce = async (
   freezerData: FreezerData,
   templates: ItemTemplate[],
   timestamp: number
-): Promise<void> => {
+): Promise<{ success: boolean; serverTimestamp?: number; reason?: string }> => {
   if (!db) {
-    throw new Error('Firebase není nakonfigurován');
+    return { success: false, reason: 'Firebase není nakonfigurován' };
   }
 
-  const dataRef = doc(db, 'sync-data', syncCode.toUpperCase());
-  
-  // Force sync - ignoruj kontrolu timestampu, vždy přepiš
-  const data: any = {
-    freezerData,
-    templates,
-    lastModified: timestamp,
-    lastUpdated: new Date().toISOString()
-  };
-  
-  await setDoc(dataRef, data, { merge: true });
-  console.log('✅ Force sync - data přepsána v Firebase s timestamp:', new Date(timestamp).toISOString());
+  try {
+    const dataRef = doc(db, 'sync-data', syncCode.toUpperCase());
+    
+    // Force sync - ignoruj kontrolu timestampu, vždy přepiš
+    const data: any = {
+      freezerData,
+      templates,
+      lastModified: timestamp,
+      lastUpdated: new Date().toISOString()
+    };
+    
+    await setDoc(dataRef, data, { merge: true });
+    console.log('✅ Force sync - data přepsána v Firebase s timestamp:', new Date(timestamp).toISOString());
+    
+    return { success: true, serverTimestamp: timestamp };
+  } catch (error: any) {
+    console.error('❌ Chyba při force sync:', error);
+    
+    if (error.code === 'resource-exhausted' || error.message?.includes('quota')) {
+      return { 
+        success: false, 
+        reason: '🚫 Denní kvóta Firebase byla překročena. Zkuste to zítra.' 
+      };
+    }
+    
+    return { 
+      success: false, 
+      reason: `Chyba: ${error.message || 'Neznámá chyba při přepisování dat'}` 
+    };
+  }
 };
 
 export const invalidateSyncCode = async (syncCode: string) => {
