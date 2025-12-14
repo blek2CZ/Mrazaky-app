@@ -190,17 +190,27 @@ function App() {
   };
 
   const handleConfirmSync = async () => {
+    console.log('🚀 handleConfirmSync zavoláno');
     setShowSyncConfirm(false);
     
     if (!syncCode || !firebaseConfigured) {
+      console.error('❌ Sync nelze provést:', { syncCode, firebaseConfigured });
       setErrorMessage('Synchronizace není k dispozici. Zkontrolujte připojení.');
       setTimeout(() => setErrorMessage(null), 10000);
       return;
     }
     
+    console.log('📤 Odesílám data do Firebase...', {
+      syncCode,
+      lastModified,
+      hasUnsavedChanges,
+      changeCount
+    });
+    
     try {
       const newTimestamp = Date.now();
       const result = await syncDataToFirebase(syncCode, freezerData, templates, newTimestamp);
+      console.log('📥 Odpověď z Firebase:', result);
       
       if (result.success && result.serverTimestamp) {
         setLastModified(result.serverTimestamp);
