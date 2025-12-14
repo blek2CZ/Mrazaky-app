@@ -21,6 +21,7 @@ function App() {
   const [isCheckingForUpdates, setIsCheckingForUpdates] = useState(false);
   const [lastChecked, setLastChecked] = useState<number | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [openSection, setOpenSection] = useState<string | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [changeCount, setChangeCount] = useState(0);
@@ -192,11 +193,13 @@ function App() {
   const handleConfirmSync = async () => {
     console.log('🚀 handleConfirmSync zavoláno');
     setShowSyncConfirm(false);
+    setIsUploading(true);
     
     if (!syncCode || !firebaseConfigured) {
       console.error('❌ Sync nelze provést:', { syncCode, firebaseConfigured });
       setErrorMessage('Synchronizace není k dispozici. Zkontrolujte připojení.');
       setTimeout(() => setErrorMessage(null), 10000);
+      setIsUploading(false);
       return;
     }
     
@@ -221,22 +224,26 @@ function App() {
         setChangeCount(0);
         setSuccessMessage('Změny byly úspěšně odeslány do cloudu');
         setTimeout(() => setSuccessMessage(null), 5000);
+        setIsUploading(false);
       } else if (!result.success) {
         console.error('❌ Firebase vrátil chybu:', result.reason);
         const errorMsg = result.reason || 'Neznámá chyba';
         setErrorMessage(errorMsg);
         setTimeout(() => setErrorMessage(null), 10000);
+        setIsUploading(false);
         // Ponechat hasUnsavedChanges=true aby uživatel mohl zkusit znovu
       } else {
         console.error('⚠️ Neočekávaná odpověď z Firebase:', result);
         setErrorMessage('Neočekávaná odpověď z databáze. Zkuste to znovu.');
         setTimeout(() => setErrorMessage(null), 10000);
+        setIsUploading(false);
       }
     } catch (error) {
       console.error('❌ Exception při odesílání do Firebase:', error);
       const errorMsg = error instanceof Error ? error.message : 'Neznámá chyba';
       setErrorMessage(`Chyba při odesílání dat: ${errorMsg}`);
       setTimeout(() => setErrorMessage(null), 10000);
+      setIsUploading(false);
       // Ponechat hasUnsavedChanges=true aby uživatel mohl zkusit znovu
     }
   };
@@ -956,6 +963,17 @@ function App() {
           setOpenSection(openSection === sectionId ? null : sectionId);
         }}
       />
+
+      {/* Loading overlay při nahrávání dat */}
+      {isUploading && (
+        <div className="loading-overlay">
+          <div className="loading-content">
+            <div className="loading-spinner">⏳</div>
+            <h2>Nahrávám data do cloudu...</h2>
+            <p>Prosím čekejte, aplikace bude brzy dostupná.</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
