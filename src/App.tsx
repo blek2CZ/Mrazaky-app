@@ -5,7 +5,7 @@ import SyncModal from './SyncModal';
 import { FreezerData, Item, ItemTemplate } from './types';
 import { loadFreezerData, saveFreezerData, loadItemTemplates, saveItemTemplates } from './storage';
 import { exportData, importData } from './dataSync';
-import { getSyncCode, saveSyncCode, clearSyncCode, syncDataToFirebase, subscribeToSync, isFirebaseConfigured, invalidateSyncCode, getAdminPasswordHash } from './firebaseSync';
+import { getSyncCode, saveSyncCode, clearSyncCode, syncDataToFirebase, syncDataToFirebaseForce, subscribeToSync, isFirebaseConfigured, invalidateSyncCode, getAdminPasswordHash } from './firebaseSync';
 import { verifyPasswordHash } from './adminAuth';
 import './App.css';
 
@@ -673,11 +673,99 @@ function App() {
 
     try {
       const { freezerData: importedFreezerData, templates: importedTemplates } = await importData(file);
+      
+      // Pokud jsme připojení k Firebase, vyžaduj admin heslo
+      if (syncCode && firebaseConfigured) {
+        const password = prompt('🔐 Pro nahrať importovaných dat do databáze zadejte admin heslo:');
+        
+        if (!password) {
+          // Zrušeno uživatelem - neuložíme ani lokálně
+          alert('Import zrušen');
+          if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+          }
+          return;
+        }
+        
+        // Ověř heslo
+        const storedHash = await getAdminPasswordHash(syncCode);
+        if (!storedHash) {
+          alert('Chyba: Nelze ověřit admin heslo');
+          if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+          }
+          return;
+        }
+        
+        const isValid = await verifyPasswordHash(password, storedHash);
+        if (!isValid) {
+          alert('❌ Nesprávné admin heslo! Import zrušen.');
+          if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+          }
+          return;
+        }
+        
+        // Heslo OK - odpoj listener před zápisem
+        if (unsubscribeRef.current) {
+          unsubscribeRef.current();
+          unsubscribeRef.current = null;
+        }
+        
+        if (syncTimeoutRef.current) {
+          clearTimeout(syncTimeoutRef.current);
+        }
+      }
+      
+      // Ulož lokálně
       setFreezerData(importedFreezerData);
       setTemplates(importedTemplates);
       saveFreezerData(importedFreezerData);
       saveItemTemplates(importedTemplates);
-      alert('Data úspěšně importována!');
+      
+      // Force sync do Firebase s novým timestampem (ignoruje kontrolu starých dat)
+      if (syncCode && firebaseConfigured) {
+        try {
+          const newTimestamp = Date.now();
+          // Použijeme speciální funkci pro force sync
+          await syncDataToFirebaseForce(syncCode, importedFreezerData, importedTemplates, newTimestamp);
+          setLastModified(newTimestamp);
+          console.log('✅ Importovaná data nahraána do Firebase');
+          
+          // Znovu připoj listener
+          setTimeout(() => {
+            if (!unsubscribeRef.current) {
+              const newUnsubscribe = subscribeToSync(
+                syncCode,
+                ({ freezerData: newFreezerData, templates: newTemplates, lastModified: serverTimestamp }) => {
+                  console.log('☁️ Přijata data z Firebase, timestamp:', new Date(serverTimestamp).toISOString());
+                  setFreezerData(newFreezerData);
+                  setTemplates(newTemplates);
+                  setLastModified(serverTimestamp);
+                  saveFreezerData(newFreezerData);
+                  saveItemTemplates(newTemplates);
+                },
+                () => {
+                  alert('⚠️ Synchronizační kód již není platný!');
+                  initialSyncDone.current = false;
+                  clearSyncCode();
+                  setSyncCode(null);
+                  setIsSyncing(false);
+                  setShowSyncModal('enter');
+                }
+              );
+              unsubscribeRef.current = newUnsubscribe;
+            }
+          }, 100);
+          
+          alert('✅ Data úspěšně importována a nahraána do databáze!');
+        } catch (error) {
+          console.error('Chyba při nahrávání do Firebase:', error);
+          alert('Data importována lokálně, ale nahrání do databáze selhalo!');
+        }
+      } else {
+        alert('Data úspěšně importována!');
+      }
     } catch (error) {
       alert('Chyba při importu dat: ' + (error as Error).message);
     }

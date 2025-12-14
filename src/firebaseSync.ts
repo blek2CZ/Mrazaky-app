@@ -126,6 +126,30 @@ export const subscribeToSync = (
   });
 };
 
+export const syncDataToFirebaseForce = async (
+  syncCode: string,
+  freezerData: FreezerData,
+  templates: ItemTemplate[],
+  timestamp: number
+): Promise<void> => {
+  if (!db) {
+    throw new Error('Firebase není nakonfigurován');
+  }
+
+  const dataRef = doc(db, 'sync-data', syncCode.toUpperCase());
+  
+  // Force sync - ignoruj kontrolu timestampu, vždy přepiš
+  const data: any = {
+    freezerData,
+    templates,
+    lastModified: timestamp,
+    lastUpdated: new Date().toISOString()
+  };
+  
+  await setDoc(dataRef, data, { merge: true });
+  console.log('✅ Force sync - data přepsána v Firebase s timestamp:', new Date(timestamp).toISOString());
+};
+
 export const invalidateSyncCode = async (syncCode: string) => {
   if (!db) {
     throw new Error('Firebase není nakonfigurován');
