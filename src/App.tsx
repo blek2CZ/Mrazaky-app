@@ -133,21 +133,64 @@ function App() {
   }, [freezerData, templates, syncCode, isSyncing, firebaseConfigured]);
 
   const handleAddItem = (freezerType: 'small' | 'large', drawerId: number, item: Item) => {
-    setFreezerData(prev => ({
-      ...prev,
+    // Odpoj listener před změnou aby nedošlo k race condition
+    if (unsubscribeRef.current) {
+      unsubscribeRef.current();
+      unsubscribeRef.current = null;
+    }
+    
+    // Zruš případný pending timeout
+    if (syncTimeoutRef.current) {
+      clearTimeout(syncTimeoutRef.current);
+    }
+    
+    // Ihned aktualizuj localStorage jako zálohu
+    const newFreezerData = {
+      ...freezerData,
       [freezerType]: {
-        ...prev[freezerType],
-        [drawerId]: [...(prev[freezerType][drawerId] || []), item],
+        ...freezerData[freezerType],
+        [drawerId]: [...(freezerData[freezerType][drawerId] || []), item],
       },
-    }));
+    };
+    saveFreezerData(newFreezerData);
+    
+    setFreezerData(newFreezerData);
 
     // Pokud je to nová položka (custom), přidej do templates
+    let newTemplates = templates;
     if (!templates.find(t => t.name === item.name)) {
       const newTemplate: ItemTemplate = {
         id: Date.now().toString(),
         name: item.name,
       };
-      setTemplates(prev => [...prev, newTemplate]);
+      newTemplates = [...templates, newTemplate];
+      saveItemTemplates(newTemplates);
+      setTemplates(newTemplates);
+    }
+    
+    // Znovu připoj listener po malé prodlevě
+    if (syncCode && firebaseConfigured) {
+      setTimeout(() => {
+        if (!unsubscribeRef.current) {
+          const newUnsubscribe = subscribeToSync(
+            syncCode,
+            ({ freezerData: newFreezerData, templates: newTemplates }) => {
+              setFreezerData(newFreezerData);
+              setTemplates(newTemplates);
+              saveFreezerData(newFreezerData);
+              saveItemTemplates(newTemplates);
+            },
+            () => {
+              alert('⚠️ Synchronizační kód již není platný!\n\nAdmin změnil synchronizační kód. Budete odpojeni a můžete zadat nový kód.');
+              clearSyncCode();
+              setSyncCode(null);
+              setIsSyncing(false);
+              setShowSyncModal('enter');
+            }
+          );
+          unsubscribeRef.current = newUnsubscribe;
+        }
+      }, 100);
     }
   };
 
