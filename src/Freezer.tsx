@@ -10,11 +10,14 @@ interface DrawerProps {
   onUpdateItem: (drawerId: number, itemId: string, quantity: number) => void;
   onDeleteItem: (drawerId: number, itemId: string) => void;
   onEditItem: (oldName: string, newName: string) => void;
+  onMoveItem: (itemId: string, targetFreezer: 'small' | 'large', targetDrawer: number) => void;
+  freezerType: string;
+  totalDrawers: { small: number; large: number };
   isExpanded: boolean;
   onToggle: () => void;
 }
 
-function Drawer({ drawerId, items, templates, onAddItem, onUpdateItem, onDeleteItem, onEditItem, isExpanded, onToggle }: DrawerProps) {
+function Drawer({ drawerId, items, templates, onAddItem, onUpdateItem, onDeleteItem, onEditItem, onMoveItem, freezerType, totalDrawers, isExpanded, onToggle }: DrawerProps) {
   const [selectedTemplate, setSelectedTemplate] = useState('');
   const [customName, setCustomName] = useState('');
   const [quantity, setQuantity] = useState(1);
@@ -23,6 +26,7 @@ function Drawer({ drawerId, items, templates, onAddItem, onUpdateItem, onDeleteI
   const [sortDescending, setSortDescending] = useState(false);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
+  const [movingItemId, setMovingItemId] = useState<string | null>(null);
 
   const handleAdd = () => {
     const name = selectedTemplate === 'custom' ? customName : templates.find(t => t.id === selectedTemplate)?.name;
@@ -162,7 +166,52 @@ function Drawer({ drawerId, items, templates, onAddItem, onUpdateItem, onDeleteI
                       <span className="item-quantity">{item.quantity} ks</span>
                     </div>
                     <div className="item-actions">
-                      {editingItemId === item.id ? (
+                      {movingItemId === item.id ? (
+                        <>
+                          <select
+                            className="move-select"
+                            onChange={(e) => {
+                              const [targetFreezer, targetDrawer] = e.target.value.split('-');
+                              if (targetFreezer && targetDrawer) {
+                                onMoveItem(item.id, targetFreezer as 'small' | 'large', parseInt(targetDrawer));
+                                setMovingItemId(null);
+                              }
+                            }}
+                            defaultValue=""
+                            autoFocus
+                          >
+                            <option value="">-- Přesunout do --</option>
+                            <optgroup label="Malý mrazák">
+                              {Array.from({ length: totalDrawers.small }, (_, i) => i + 1).map(d => (
+                                <option 
+                                  key={`small-${d}`} 
+                                  value={`small-${d}`}
+                                  disabled={freezerType === 'small' && d === drawerId}
+                                >
+                                  Šuplík {d}
+                                </option>
+                              ))}
+                            </optgroup>
+                            <optgroup label="Velký mrazák">
+                              {Array.from({ length: totalDrawers.large }, (_, i) => i + 1).map(d => (
+                                <option 
+                                  key={`large-${d}`} 
+                                  value={`large-${d}`}
+                                  disabled={freezerType === 'large' && d === drawerId}
+                                >
+                                  Šuplík {d}
+                                </option>
+                              ))}
+                            </optgroup>
+                          </select>
+                          <button
+                            onClick={() => setMovingItemId(null)}
+                            title="Zrušit"
+                          >
+                            ❌
+                          </button>
+                        </>
+                      ) : editingItemId === item.id ? (
                         <>
                           <button
                             onClick={() => {
@@ -199,6 +248,12 @@ function Drawer({ drawerId, items, templates, onAddItem, onUpdateItem, onDeleteI
                           >
                             ✏️
                           </button>
+                          <button
+                            onClick={() => setMovingItemId(item.id)}
+                            title="Přesunout do jiného šuplíku"
+                          >
+                            ↕️
+                          </button>
                           <button onClick={() => onDeleteItem(drawerId, item.id)}>🗑️</button>
                         </>
                       )}
@@ -224,11 +279,13 @@ interface FreezerProps {
   onUpdateItem: (drawerId: number, itemId: string, quantity: number) => void;
   onDeleteItem: (drawerId: number, itemId: string) => void;
   onEditItem: (oldName: string, newName: string) => void;
+  onMoveItem: (sourceDrawerId: number, itemId: string, targetFreezer: 'small' | 'large', targetDrawer: number) => void;
+  totalDrawers: { small: number; large: number };
   openDrawerId: string | null;
   onToggleDrawer: (drawerId: number) => void;
 }
 
-export default function Freezer({ title, drawerCount, freezerType, drawers, templates, onAddItem, onUpdateItem, onDeleteItem, onEditItem, openDrawerId, onToggleDrawer }: FreezerProps) {
+export default function Freezer({ title, drawerCount, freezerType, drawers, templates, onAddItem, onUpdateItem, onDeleteItem, onEditItem, onMoveItem, totalDrawers, openDrawerId, onToggleDrawer }: FreezerProps) {
   return (
     <div className="freezer">
       <h2>{title} ({drawerCount} šuplíků)</h2>
@@ -243,6 +300,9 @@ export default function Freezer({ title, drawerCount, freezerType, drawers, temp
             onUpdateItem={onUpdateItem}
             onDeleteItem={onDeleteItem}
             onEditItem={onEditItem}
+            onMoveItem={(itemId, targetFreezer, targetDrawer) => onMoveItem(drawerId, itemId, targetFreezer, targetDrawer)}
+            freezerType={freezerType}
+            totalDrawers={totalDrawers}
             isExpanded={openDrawerId === `${freezerType}-${drawerId}`}
             onToggle={() => onToggleDrawer(drawerId)}
           />

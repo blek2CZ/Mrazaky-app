@@ -362,6 +362,82 @@ function App() {
     setTemplates(prev => prev.map(t => t.name === oldName ? { ...t, name: newName } : t));
   };
 
+  const handleMoveItem = async (
+    sourceFreezerType: 'small' | 'large',
+    sourceDrawerId: number, 
+    itemId: string, 
+    targetFreezer: 'small' | 'large', 
+    targetDrawer: number
+  ) => {
+    // Najdi položku ve zdrojovém šuplíku
+    const sourceItem = freezerData[sourceFreezerType][sourceDrawerId]?.find(item => item.id === itemId);
+    if (!sourceItem) return;
+
+    // Odpoj listener před změnou
+    if (unsubscribeRef.current) {
+      unsubscribeRef.current();
+      unsubscribeRef.current = null;
+    }
+    
+    if (syncTimeoutRef.current) {
+      clearTimeout(syncTimeoutRef.current);
+    }
+
+    // Odeber ze zdroje
+    const newFreezerData: FreezerData = {
+      small: { ...freezerData.small },
+      large: { ...freezerData.large }
+    };
+    
+    newFreezerData[sourceFreezerType] = {
+      ...newFreezerData[sourceFreezerType],
+      [sourceDrawerId]: newFreezerData[sourceFreezerType][sourceDrawerId].filter(item => item.id !== itemId)
+    };
+
+    // Přidej do cíle
+    newFreezerData[targetFreezer] = {
+      ...newFreezerData[targetFreezer],
+      [targetDrawer]: [...(newFreezerData[targetFreezer][targetDrawer] || []), sourceItem]
+    };
+
+    saveFreezerData(newFreezerData);
+    setFreezerData(newFreezerData);
+    
+    // Ulož do Firebase a počkej na potvrzení
+    if (syncCode && firebaseConfigured) {
+      try {
+        await syncDataToFirebase(syncCode, newFreezerData, templates);
+      } catch (error) {
+        console.error('Chyba při ukládání do Firebase:', error);
+      }
+    }
+    
+    // Znovu připoj listener
+    if (syncCode && firebaseConfigured) {
+      setTimeout(() => {
+        if (!unsubscribeRef.current) {
+          const newUnsubscribe = subscribeToSync(
+            syncCode,
+            ({ freezerData: newFreezerData, templates: newTemplates }) => {
+              setFreezerData(newFreezerData);
+              setTemplates(newTemplates);
+              saveFreezerData(newFreezerData);
+              saveItemTemplates(newTemplates);
+            },
+            () => {
+              alert('⚠️ Synchronizační kód již není platný!\n\nAdmin změnil synchronizační kód. Budete odpojeni a můžete zadat nový kód.');
+              clearSyncCode();
+              setSyncCode(null);
+              setIsSyncing(false);
+              setShowSyncModal('enter');
+            }
+          );
+          unsubscribeRef.current = newUnsubscribe;
+        }
+      }, 100);
+    }
+  };
+
   const handleDeleteTemplate = (id: string) => {
     setTemplates(prev => prev.filter(t => t.id !== id));
   };
@@ -536,6 +612,10 @@ function App() {
         onUpdateItem={(drawerId, itemId, quantity) => handleUpdateItem('small', drawerId, itemId, quantity)}
         onDeleteItem={(drawerId, itemId) => handleDeleteItem('small', drawerId, itemId)}
         onEditItem={handleEditItemName}
+        onMoveItem={(sourceDrawerId, itemId, targetFreezer, targetDrawer) => 
+          handleMoveItem('small', sourceDrawerId, itemId, targetFreezer, targetDrawer)
+        }
+        totalDrawers={{ small: 3, large: 7 }}
         openDrawerId={openSection?.startsWith('small-') ? openSection : null}
         onToggleDrawer={(drawerId) => {
           const sectionId = `small-${drawerId}`;
@@ -553,6 +633,10 @@ function App() {
         onUpdateItem={(drawerId, itemId, quantity) => handleUpdateItem('large', drawerId, itemId, quantity)}
         onDeleteItem={(drawerId, itemId) => handleDeleteItem('large', drawerId, itemId)}
         onEditItem={handleEditItemName}
+        onMoveItem={(sourceDrawerId, itemId, targetFreezer, targetDrawer) => 
+          handleMoveItem('large', sourceDrawerId, itemId, targetFreezer, targetDrawer)
+        }
+        totalDrawers={{ small: 3, large: 7 }}
         openDrawerId={openSection?.startsWith('large-') ? openSection : null}
         onToggleDrawer={(drawerId) => {
           const sectionId = `large-${drawerId}`;
