@@ -89,8 +89,9 @@ function Drawer({ drawerId, items, templates, allDrawers, onAddItem, onUpdateIte
                 .sort((a, b) => a.name.localeCompare(b.name, 'cs'))
                 .map(template => {
                   // Zkontroluj zda je položka v jiném šuplíku
+                  const currentDrawerKey = `${freezerType}-${drawerId}`;
                   const isInOtherDrawer = Object.entries(allDrawers)
-                    .filter(([id]) => parseInt(id) !== drawerId)
+                    .filter(([id]) => id !== currentDrawerKey)
                     .some(([_, drawerItems]) => drawerItems.some(item => item.name === template.name));
                   
                   return (

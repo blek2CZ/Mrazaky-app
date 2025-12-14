@@ -682,7 +682,10 @@ function App() {
         drawerCount={3}
         freezerType="small"
         drawers={freezerData.small}
-        allDrawersFromBothFreezers={{ ...freezerData.small, ...freezerData.large }}
+        allDrawersFromBothFreezers={{
+          ...Object.fromEntries(Object.entries(freezerData.small).map(([id, items]) => [`small-${id}`, items])),
+          ...Object.fromEntries(Object.entries(freezerData.large).map(([id, items]) => [`large-${id}`, items]))
+        }}
         templates={templates}
         onAddItem={(drawerId, item) => handleAddItem('small', drawerId, item)}
         onUpdateItem={(drawerId, itemId, quantity) => handleUpdateItem('small', drawerId, itemId, quantity)}
@@ -704,7 +707,10 @@ function App() {
         drawerCount={7}
         freezerType="large"
         drawers={freezerData.large}
-        allDrawersFromBothFreezers={{ ...freezerData.small, ...freezerData.large }}
+        allDrawersFromBothFreezers={{
+          ...Object.fromEntries(Object.entries(freezerData.small).map(([id, items]) => [`small-${id}`, items])),
+          ...Object.fromEntries(Object.entries(freezerData.large).map(([id, items]) => [`large-${id}`, items]))
+        }}
         templates={templates}
         onAddItem={(drawerId, item) => handleAddItem('large', drawerId, item)}
         onUpdateItem={(drawerId, itemId, quantity) => handleUpdateItem('large', drawerId, itemId, quantity)}
