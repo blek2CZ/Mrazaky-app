@@ -79,6 +79,7 @@
 
 .edit-item-input {
   flex: 1;
+  min-width: 0; /* Umožní input zmenšit se */
   padding: 0.3rem 0.5rem;
   font-size: 0.95em;
   border: 2px solid #646cff;
@@ -168,6 +169,7 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  min-width: 0; /* Umožní shrink editačního pole */
 }
 
 .item-name {
@@ -177,16 +179,19 @@
 .item-quantity {
   color: #61dafb;
   font-weight: 600;
+  white-space: nowrap; /* Zabrání zalomení množství */
 }
 
 .item-actions {
   display: flex;
   gap: 0.5rem;
+  flex-shrink: 0; /* Tlačítka se nebudou zmenšovat */
 }
 
 .item-actions button {
   padding: 0.3em 0.6em;
   font-size: 0.9em;
+  min-width: 32px; /* Minimální šířka pro emoji tlačítka */
 }
 
 @media (max-width: 768px) {
