@@ -91,7 +91,7 @@ function Drawer({ drawerId, items, templates, allDrawers, onAddItem, onUpdateIte
                       key={template.id} 
                       value={template.id}
                       className={isInOtherDrawer ? 'item-in-other-drawer' : ''}
-                      style={isInOtherDrawer ? { backgroundColor: '#fff3cd', color: '#856404' } : {}}
+                      style={isInOtherDrawer ? { color: '#856404' } : {}}
                     >
                       {template.name}{isInOtherDrawer ? ' •' : ''}
                     </option>
