@@ -19,14 +19,13 @@
   - [x] Firebase mocks pro izolované testy
 
 ### 🚧 Probíhá
-- [ ] **1.2 Vyčlenění modalů z App.tsx** - PŘIPRAVENO K ZAHÁJENÍ
-
-### 📝 Čeká
 - [ ] **1.2 Vyčlenění modalů z App.tsx**
   - [ ] ConflictResolutionModal.tsx + testy
   - [ ] DisconnectModal.tsx + testy
-  - [ ] LoadingOverlay.tsx + testy
+  - [x] LoadingOverlay.tsx + testy ✅ (8/8 tests)
   - [ ] Aktualizace App.tsx
+
+### 📝 Čeká
   
 - [ ] **1.3 Vyčlenění notification systému**
   - [ ] NotificationSnackbar.tsx + testy
