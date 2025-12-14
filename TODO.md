@@ -18,12 +18,14 @@
   - [x] První smoke test (5 testů, 100% passing ✅)
   - [x] Firebase mocks pro izolované testy
 
-### 🚧 Probíhá
-- [ ] **1.2 Vyčlenění modalů z App.tsx**
-  - [x] ConflictResolutionModal.tsx + testy ✅ (36/36 tests)
+### ✅ Dokončeno
+- [x] **1.2 Vyčlenění modalů z App.tsx** ✅ (50/50 tests)
+  - [x] ConflictResolutionModal.tsx + testy ✅
   - [x] DisconnectModal.tsx + testy ✅
   - [x] LoadingOverlay.tsx + testy ✅
-  - [ ] NotificationSnackbar.tsx + testy
+  - [x] NotificationSnackbar.tsx + testy ✅
+
+### 🚧 Probíhá
 
 ### 📝 Čeká
   
