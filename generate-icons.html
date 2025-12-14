@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Icon Generator</title>
+</head>
+<body>
+  <canvas id="canvas192" width="192" height="192"></canvas>
+  <canvas id="canvas512" width="512" height="512"></canvas>
+  
+  <script>
+    function createIcon(canvasId, size) {
+      const canvas = document.getElementById(canvasId);
+      const ctx = canvas.getContext('2d');
+      
+      // Background
+      ctx.fillStyle = '#2196f3';
+      ctx.fillRect(0, 0, size, size);
+      
+      // Freezer body
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(size*0.2, size*0.15, size*0.6, size*0.7);
+      
+      // Top door
+      ctx.fillStyle = '#e3f2fd';
+      ctx.fillRect(size*0.22, size*0.17, size*0.56, size*0.28);
+      
+      // Bottom door
+      ctx.fillRect(size*0.22, size*0.47, size*0.56, size*0.36);
+      
+      // Handles
+      ctx.fillStyle = '#2196f3';
+      ctx.beginPath();
+      ctx.arc(size*0.72, size*0.31, size*0.02, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(size*0.72, size*0.65, size*0.02, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Download link
+      const link = document.createElement('a');
+      link.download = `icon-${size}.png`;
+      link.href = canvas.toDataURL();
+      link.textContent = `Download ${size}x${size}`;
+      link.style.display = 'block';
+      document.body.appendChild(link);
+    }
+    
+    createIcon('canvas192', 192);
+    createIcon('canvas512', 512);
+  </script>
+</body>
+</html>
