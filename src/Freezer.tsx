@@ -56,7 +56,7 @@ function Drawer({ drawerId, items, templates, allDrawers, onAddItem, onUpdateIte
   const itemCount = items.length;
 
   return (
-    <div className="drawer">
+    <div className="drawer" onClick={(e) => e.stopPropagation()}>
       <div className="drawer-header">
         <div className="drawer-title" onClick={onToggle}>
           <h3>Šuplík {drawerId}</h3>

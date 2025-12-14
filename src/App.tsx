@@ -667,26 +667,23 @@ function App() {
         />
       )}
       
-      <div onClick={(e) => e.stopPropagation()}>
-        <TemplatesManager
-          templates={templates}
-          onAddTemplate={handleAddTemplate}
-          onEditTemplate={handleEditTemplate}
-          onDeleteTemplate={handleDeleteTemplate}
-          isTemplateUsed={isTemplateUsed}
-          isExpanded={openSection === 'template-manager'}
-          onToggle={() => setOpenSection(openSection === 'template-manager' ? null : 'template-manager')}
-        />
-      </div>
+      <TemplatesManager
+        templates={templates}
+        onAddTemplate={handleAddTemplate}
+        onEditTemplate={handleEditTemplate}
+        onDeleteTemplate={handleDeleteTemplate}
+        isTemplateUsed={isTemplateUsed}
+        isExpanded={openSection === 'template-manager'}
+        onToggle={() => setOpenSection(openSection === 'template-manager' ? null : 'template-manager')}
+      />
 
-      <div onClick={(e) => e.stopPropagation()}>
-        <Freezer
-          title="Malý mrazák"
-          drawerCount={3}
-          freezerType="small"
-          drawers={freezerData.small}
-          allDrawersFromBothFreezers={{ ...freezerData.small, ...freezerData.large }}
-          templates={templates}
+<Freezer
+        title="Malý mrazák"
+        drawerCount={3}
+        freezerType="small"
+        drawers={freezerData.small}
+        allDrawersFromBothFreezers={{ ...freezerData.small, ...freezerData.large }}
+        templates={templates}
         onAddItem={(drawerId, item) => handleAddItem('small', drawerId, item)}
         onUpdateItem={(drawerId, itemId, quantity) => handleUpdateItem('small', drawerId, itemId, quantity)}
         onDeleteItem={(drawerId, itemId) => handleDeleteItem('small', drawerId, itemId)}
@@ -700,11 +697,9 @@ function App() {
           const sectionId = `small-${drawerId}`;
           setOpenSection(openSection === sectionId ? null : sectionId);
         }}
-        />
-      </div>
+      />
 
-      <div onClick={(e) => e.stopPropagation()}>
-        <Freezer
+      <Freezer
         title="Velký mrazák"
         drawerCount={7}
         freezerType="large"
@@ -724,8 +719,7 @@ function App() {
           const sectionId = `large-${drawerId}`;
           setOpenSection(openSection === sectionId ? null : sectionId);
         }}
-        />
-      </div>
+      />
     </div>
   );
 }

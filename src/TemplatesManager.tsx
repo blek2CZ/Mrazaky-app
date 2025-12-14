@@ -34,7 +34,7 @@ export default function TemplatesManager({ templates, onAddTemplate, onEditTempl
   };
 
   return (
-    <div className="templates-manager">
+    <div className="templates-manager" onClick={(e) => e.stopPropagation()}>
       <div className="templates-header" onClick={onToggle}>
         <h2>Správa položek</h2>
         <button type="button" className="toggle-button" onClick={(e) => { e.stopPropagation(); onToggle(); }}>{isExpanded ? '▼' : '▶'}</button>
