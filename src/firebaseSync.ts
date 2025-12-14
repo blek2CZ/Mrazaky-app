@@ -92,11 +92,22 @@ export const syncDataToFirebase = async (
     }
     
     console.log('📝 Začínám setDoc do Firebase...');
-    await setDoc(dataRef, data, { merge: true });
-    console.log('✅ setDoc dokončen úspěšně!');
-    console.log('✅ Data uložena do Firebase s timestamp:', new Date(newTimestamp).toISOString());
     
-    return { success: true, serverTimestamp: newTimestamp };
+    // Přidáme timeout a explicitní error handling
+    try {
+      await Promise.race([
+        setDoc(dataRef, data, { merge: true }),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Firebase timeout')), 10000)
+        )
+      ]);
+      console.log('✅ setDoc dokončen úspěšně!');
+      console.log('✅ Data uložena do Firebase s timestamp:', new Date(newTimestamp).toISOString());
+      return { success: true, serverTimestamp: newTimestamp };
+    } catch (setDocError: any) {
+      console.error('💥 setDoc selhal:', setDocError);
+      throw setDocError; // Re-throw pro outer catch
+    }
   } catch (error: any) {
     console.error('🔴 CATCH block zachytil chybu:', error);
     console.error('🔴 Error code:', error?.code);
