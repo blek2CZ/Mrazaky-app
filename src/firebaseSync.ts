@@ -91,11 +91,16 @@ export const syncDataToFirebase = async (
       data.adminPasswordHash = adminPasswordHash;
     }
     
+    console.log('📝 Začínám setDoc do Firebase...');
     await setDoc(dataRef, data, { merge: true });
+    console.log('✅ setDoc dokončen úspěšně!');
     console.log('✅ Data uložena do Firebase s timestamp:', new Date(newTimestamp).toISOString());
     
     return { success: true, serverTimestamp: newTimestamp };
   } catch (error: any) {
+    console.error('🔴 CATCH block zachytil chybu:', error);
+    console.error('🔴 Error code:', error?.code);
+    console.error('🔴 Error message:', error?.message);
     console.error('❌ Chyba při zápisu do Firebase:', error);
     
     // Rozpoznání specifických Firebase chyb
