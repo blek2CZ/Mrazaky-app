@@ -369,21 +369,33 @@ function App() {
     targetFreezer: 'small' | 'large', 
     targetDrawer: number
   ) => {
-    // Najdi položku ve zdrojovém šuplíku
+    console.log('=== PŘESUN POLOŽKY - START ===');
+    console.log('Zdroj:', sourceFreezerType, 'šuplík', sourceDrawerId);
+    console.log('Cíl:', targetFreezer, 'šuplík', targetDrawer);
+    
+    // KROK 1: Najdi položku ve zdrojovém šuplíku
     const sourceItem = freezerData[sourceFreezerType][sourceDrawerId]?.find(item => item.id === itemId);
-    if (!sourceItem) return;
+    if (!sourceItem) {
+      console.error('❌ Položka nenalezena!');
+      alert('Chyba: Položka nebyla nalezena!');
+      return;
+    }
+    console.log('✓ Položka nalezena:', sourceItem.name, `(${sourceItem.quantity} ks)`);
 
-    // Odpoj listener před změnou
+    // KROK 2: Odpoj listener před změnou
     if (unsubscribeRef.current) {
       unsubscribeRef.current();
       unsubscribeRef.current = null;
+      console.log('✓ Firebase listener odpojen');
     }
     
     if (syncTimeoutRef.current) {
       clearTimeout(syncTimeoutRef.current);
+      console.log('✓ Timeout zrušen');
     }
 
-    // Deep copy všech dat
+    // KROK 3: Deep copy všech dat (IMMUTABLE)
+    console.log('📋 Vytváření kopie všech dat...');
     const newFreezerData: FreezerData = {
       small: Object.fromEntries(
         Object.entries(freezerData.small).map(([id, items]) => [id, [...items]])
@@ -392,33 +404,87 @@ function App() {
         Object.entries(freezerData.large).map(([id, items]) => [id, [...items]])
       ) as { [drawerId: number]: Item[] }
     };
+    console.log('✓ Kopie vytvořena');
     
-    // Odeber ze zdroje
-    newFreezerData[sourceFreezerType][sourceDrawerId] = 
-      newFreezerData[sourceFreezerType][sourceDrawerId].filter(item => item.id !== itemId);
-
-    // Přidej do cíle
+    // KROK 4: Kontrola - počet položek před změnou
+    const totalItemsBefore = 
+      Object.values(newFreezerData.small).flat().length + 
+      Object.values(newFreezerData.large).flat().length;
+    console.log('📊 Celkem položek před změnou:', totalItemsBefore);
+    
+    // KROK 5: PŘIDEJ DO CÍLE (priorita - nejdřív přidat)
     if (!newFreezerData[targetFreezer][targetDrawer]) {
       newFreezerData[targetFreezer][targetDrawer] = [];
     }
+    const targetBefore = newFreezerData[targetFreezer][targetDrawer].length;
     newFreezerData[targetFreezer][targetDrawer] = [
       ...newFreezerData[targetFreezer][targetDrawer], 
-      sourceItem
+      { ...sourceItem } // kopie položky, ne reference
     ];
+    const targetAfter = newFreezerData[targetFreezer][targetDrawer].length;
+    console.log(`✓ PŘIDÁNO do cíle: ${targetBefore} → ${targetAfter} položek`);
+    
+    // KROK 6: Kontrola přidání
+    const addedItem = newFreezerData[targetFreezer][targetDrawer].find(item => item.id === itemId);
+    if (!addedItem) {
+      console.error('❌ CHYBA: Položka se nepřidala do cíle!');
+      alert('Chyba při přesunu: Položka se nepřidala do cílového šuplíku!');
+      return;
+    }
+    console.log('✓ Kontrola: Položka je v cíli');
 
+    // KROK 7: ODEBER ZE ZDROJE (až po úspěšném přidání)
+    const sourceBefore = newFreezerData[sourceFreezerType][sourceDrawerId].length;
+    newFreezerData[sourceFreezerType][sourceDrawerId] = 
+      newFreezerData[sourceFreezerType][sourceDrawerId].filter(item => item.id !== itemId);
+    const sourceAfter = newFreezerData[sourceFreezerType][sourceDrawerId].length;
+    console.log(`✓ ODEBRÁNO ze zdroje: ${sourceBefore} → ${sourceAfter} položek`);
+    
+    // KROK 8: Kontrola odebrání
+    const stillInSource = newFreezerData[sourceFreezerType][sourceDrawerId].find(item => item.id === itemId);
+    if (stillInSource) {
+      console.error('❌ CHYBA: Položka stále v zdrojovém šuplíku!');
+      alert('Chyba při přesunu: Položka se neodebrala ze zdrojového šuplíku!');
+      return;
+    }
+    console.log('✓ Kontrola: Položka není ve zdroji');
+    
+    // KROK 9: Kontrola - celkový počet položek (musí zůstat stejný)
+    const totalItemsAfter = 
+      Object.values(newFreezerData.small).flat().length + 
+      Object.values(newFreezerData.large).flat().length;
+    console.log('📊 Celkem položek po změně:', totalItemsAfter);
+    
+    if (totalItemsBefore !== totalItemsAfter) {
+      console.error('❌ KRITICKÁ CHYBA: Počet položek se změnil!', {
+        před: totalItemsBefore,
+        po: totalItemsAfter,
+        rozdíl: totalItemsAfter - totalItemsBefore
+      });
+      alert('KRITICKÁ CHYBA: Počet položek se změnil! Přesun zrušen.');
+      return;
+    }
+    console.log('✓ Kontrola: Celkový počet položek zachován');
+
+    // KROK 10: Ulož do localStorage
+    console.log('💾 Ukládání do localStorage...');
     saveFreezerData(newFreezerData);
     setFreezerData(newFreezerData);
+    console.log('✓ Uloženo do localStorage');
     
-    // Ulož do Firebase a počkej na potvrzení
+    // KROK 11: Ulož do Firebase
     if (syncCode && firebaseConfigured) {
+      console.log('☁️ Ukládání do Firebase...');
       try {
         await syncDataToFirebase(syncCode, newFreezerData, templates);
+        console.log('✓ Uloženo do Firebase');
       } catch (error) {
-        console.error('Chyba při ukládání do Firebase:', error);
+        console.error('❌ Chyba při ukládání do Firebase:', error);
+        alert('Varování: Data uložena lokálně, ale Firebase sync selhal!');
       }
     }
     
-    // Znovu připoj listener
+    // KROK 12: Znovu připoj listener
     if (syncCode && firebaseConfigured) {
       setTimeout(() => {
         if (!unsubscribeRef.current) {
@@ -439,9 +505,12 @@ function App() {
             }
           );
           unsubscribeRef.current = newUnsubscribe;
+          console.log('✓ Firebase listener připojen');
         }
       }, 100);
     }
+    
+    console.log('=== PŘESUN POLOŽKY - DOKONČENO ✓ ===');
   };
 
   const handleDeleteTemplate = (id: string) => {
