@@ -16,6 +16,7 @@ function App() {
   const [showSyncModal, setShowSyncModal] = useState<'generate' | 'enter' | null>(null);
   const [showDisconnectModal, setShowDisconnectModal] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const isLocalUpdateRef = useRef(false);
   const firebaseConfigured = isFirebaseConfigured();
 
   useEffect(() => {
@@ -34,6 +35,11 @@ function App() {
     const unsubscribe = subscribeToSync(
       syncCode, 
       ({ freezerData: newFreezerData, templates: newTemplates }) => {
+        // Ignoruj Firebase aktualizace pokud právě probíhá lokální úprava
+        if (isLocalUpdateRef.current) {
+          return;
+        }
+        
         setFreezerData(newFreezerData);
         setTemplates(newTemplates);
         saveFreezerData(newFreezerData);
@@ -55,8 +61,20 @@ function App() {
   // Auto-sync when data changes
   useEffect(() => {
     if (syncCode && isSyncing && firebaseConfigured) {
-      const timeoutId = setTimeout(() => {
-        syncDataToFirebase(syncCode, freezerData, templates).catch(console.error);
+      // Označ že probíhá lokální změna
+      isLocalUpdateRef.current = true;
+      
+      const timeoutId = setTimeout(async () => {
+        try {
+          await syncDataToFirebase(syncCode, freezerData, templates);
+          // Po úspěšném uložení počkej chvíli a pak znovu povol Firebase listener
+          setTimeout(() => {
+            isLocalUpdateRef.current = false;
+          }, 500);
+        } catch (error) {
+          console.error(error);
+          isLocalUpdateRef.current = false;
+        }
       }, 1000); // Debounce 1 sekunda
       
       return () => clearTimeout(timeoutId);
