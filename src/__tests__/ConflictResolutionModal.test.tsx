@@ -27,7 +27,7 @@ describe('ConflictResolutionModal', () => {
       large: { '1': [], '2': [] },
       smallMama: { '1': [], '2': [] }
     },
-    templates: [{ name: 'Template 1', emoji: '🍕' }],
+    templates: [{ id: 't1', name: 'Template 1', emoji: '🍕' }],
     lastModified: 1700000000000
   };
 
@@ -37,7 +37,7 @@ describe('ConflictResolutionModal', () => {
       large: { '1': [], '2': [] },
       smallMama: { '1': [], '2': [] }
     },
-    templates: [{ name: 'Template 1', emoji: '🍕' }, { name: 'Template 2', emoji: '🍔' }],
+    templates: [{ id: 't1', name: 'Template 1', emoji: '🍕' }, { id: 't2', name: 'Template 2', emoji: '🍔' }],
     lastModified: 1700001000000
   };
 
