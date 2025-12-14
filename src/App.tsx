@@ -134,10 +134,17 @@ function App() {
         if (showSuccessMessage) {
           if (data.lastModified === lastModified) {
             setSuccessMessage('✅ Data jsou aktuální - stejná verze jako v cloudu');
+            setTimeout(() => setSuccessMessage(null), 5000);
           } else {
-            setSuccessMessage('✅ Lokální data jsou novější než v cloudu - máte neuložené změny?');
+            // Lokální data jsou novější - nastavit jako neuložené změny
+            console.log('⚠️ Lokální data jsou novější - nastavuji hasUnsavedChanges');
+            setHasUnsavedChanges(true);
+            if (changeCount === 0) {
+              setChangeCount(1); // Nastavit alespoň 1 změnu aby se zobrazilo tlačítko
+            }
+            setSuccessMessage('✅ Lokální data jsou novější než v cloudu - použijte tlačítko pro odeslání');
+            setTimeout(() => setSuccessMessage(null), 6000);
           }
-          setTimeout(() => setSuccessMessage(null), 6000);
         }
       }
 
