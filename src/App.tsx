@@ -17,6 +17,7 @@ function App() {
   const [showDisconnectModal, setShowDisconnectModal] = useState(false);
   const [showSyncConfirm, setShowSyncConfirm] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isCheckingForUpdates, setIsCheckingForUpdates] = useState(false);
   const [lastChecked, setLastChecked] = useState<number | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -113,8 +114,14 @@ function App() {
         saveFreezerData(data.freezerData);
         saveItemTemplates(data.templates);
         console.log('✅ Data úspěšně načtena z cloudu');
+        if (showSuccessMessage) {
+          setSuccessMessage('✅ Nová data byla načtena z cloudu');
+          setTimeout(() => setSuccessMessage(null), 5000);
+        }
       } else if (showSuccessMessage) {
         console.log('✅ Data jsou aktuální');
+        setSuccessMessage('✅ Data jsou aktuální - žádné nové změny v cloudu');
+        setTimeout(() => setSuccessMessage(null), 5000);
       }
 
       setLastChecked(Date.now());
@@ -161,6 +168,8 @@ function App() {
         setHasUnsavedChanges(false);
         setChangeCount(0);
         console.log('✅ Data úspěšně odeslána do cloudu');
+        setSuccessMessage('✅ Změny byly úspěšně odeslány do cloudu');
+        setTimeout(() => setSuccessMessage(null), 5000);
       } else if (!result.success) {
         const errorMsg = result.reason || 'Neznámá chyba';
         setErrorMessage(errorMsg);
@@ -623,6 +632,46 @@ function App() {
           </div>
           <button
             onClick={() => setErrorMessage(null)}
+            style={{
+              background: 'rgba(255,255,255,0.2)',
+              border: 'none',
+              color: 'white',
+              cursor: 'pointer',
+              padding: '5px 10px',
+              borderRadius: '4px',
+              fontSize: '18px',
+              fontWeight: 'bold'
+            }}
+          >
+            ×
+          </button>
+        </div>
+      )}
+
+      {successMessage && (
+        <div style={{
+          position: 'fixed',
+          top: '20px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          backgroundColor: '#4CAF50',
+          color: 'white',
+          padding: '15px 25px',
+          borderRadius: '8px',
+          boxShadow: '0 4px 15px rgba(76,175,80,0.3)',
+          zIndex: 2000,
+          maxWidth: '500px',
+          animation: 'slideDown 0.3s ease-out',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px'
+        }}>
+          <span style={{ fontSize: '20px' }}>✅</span>
+          <div style={{ flex: 1 }}>
+            {successMessage}
+          </div>
+          <button
+            onClick={() => setSuccessMessage(null)}
             style={{
               background: 'rgba(255,255,255,0.2)',
               border: 'none',
