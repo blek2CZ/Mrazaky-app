@@ -1,6 +1,19 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import App from '../App';
+
+// Mock firebaseSync aby testy nevisely
+vi.mock('../firebaseSync', () => ({
+  getSyncCode: () => null,
+  saveSyncCode: vi.fn(),
+  clearSyncCode: vi.fn(),
+  isFirebaseConfigured: () => false,
+  syncDataToFirebase: vi.fn(),
+  syncDataToFirebaseForce: vi.fn(),
+  fetchDataFromFirebase: vi.fn(),
+  invalidateSyncCode: vi.fn(),
+  getAdminPasswordHash: vi.fn(),
+}));
 
 describe('App - Smoke Test', () => {
   it('should render without crashing', () => {
@@ -17,7 +30,7 @@ describe('App - Smoke Test', () => {
 
   it('should render action buttons', () => {
     render(<App />);
-    expect(screen.getByTitle(/Export/i)).toBeInTheDocument();
-    expect(screen.getByTitle(/Import/i)).toBeInTheDocument();
+    expect(screen.getByTitle(/Stáhnout zálohu/i)).toBeInTheDocument();
+    expect(screen.getByTitle(/Nahrát data/i)).toBeInTheDocument();
   });
 });
