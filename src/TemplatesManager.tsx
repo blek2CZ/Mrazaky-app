@@ -19,11 +19,18 @@ export default function TemplatesManager({ templates, onAddTemplate, onEditTempl
   const [editingName, setEditingName] = useState('');
 
   const handleAdd = () => {
-    if (newTemplateName.trim()) {
-      onAddTemplate(newTemplateName.trim());
-      setNewTemplateName('');
-      setShowAddForm(false);
+    const trimmedName = newTemplateName.trim();
+    if (!trimmedName) return;
+    
+    // Kontrola duplicit
+    if (templates.some(t => t.name.toLowerCase() === trimmedName.toLowerCase())) {
+      alert(`Položka "${trimmedName}" již existuje!`);
+      return;
     }
+    
+    onAddTemplate(trimmedName);
+    setNewTemplateName('');
+    setShowAddForm(false);
   };
 
   return (
@@ -46,7 +53,13 @@ export default function TemplatesManager({ templates, onAddTemplate, onEditTempl
                 onChange={(e) => setEditingName(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && editingName.trim()) {
-                    onEditTemplate(template.id, editingName.trim());
+                    const trimmedName = editingName.trim();
+                    // Kontrola duplicit (kromě aktuální položky)
+                    if (templates.some(t => t.id !== template.id && t.name.toLowerCase() === trimmedName.toLowerCase())) {
+                      alert(`Položka "${trimmedName}" již existuje!`);
+                      return;
+                    }
+                    onEditTemplate(template.id, trimmedName);
                     setEditingId(null);
                     setEditingName('');
                   } else if (e.key === 'Escape') {
@@ -64,11 +77,18 @@ export default function TemplatesManager({ templates, onAddTemplate, onEditTempl
                 <>
                   <button
                     onClick={() => {
-                      if (editingName.trim()) {
-                        onEditTemplate(template.id, editingName.trim());
-                        setEditingId(null);
-                        setEditingName('');
+                      const trimmedName = editingName.trim();
+                      if (!trimmedName) return;
+                      
+                      // Kontrola duplicit (kromě aktuální položky)
+                      if (templates.some(t => t.id !== template.id && t.name.toLowerCase() === trimmedName.toLowerCase())) {
+                        alert(`Položka "${trimmedName}" již existuje!`);
+                        return;
                       }
+                      
+                      onEditTemplate(template.id, trimmedName);
+                      setEditingId(null);
+                      setEditingName('');
                     }}
                     title="Uložit"
                   >
@@ -91,8 +111,7 @@ export default function TemplatesManager({ templates, onAddTemplate, onEditTempl
                       setEditingId(template.id);
                       setEditingName(template.name);
                     }}
-                    disabled={isTemplateUsed(template.name)}
-                    title={isTemplateUsed(template.name) ? 'Nelze editovat použitou položku' : 'Editovat'}
+                    title="Editovat"
                   >
                     ✏️
                   </button>
