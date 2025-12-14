@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Item, ItemTemplate } from './types';
 import './Freezer.css';
 
@@ -28,6 +28,13 @@ function Drawer({ drawerId, items, templates, allDrawers, onAddItem, onUpdateIte
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
   const [movingItemId, setMovingItemId] = useState<string | null>(null);
+
+  // Resetuj showAddForm při zavření šuplíku
+  useEffect(() => {
+    if (!isExpanded) {
+      setShowAddForm(false);
+    }
+  }, [isExpanded]);
 
   const handleAdd = () => {
     const name = selectedTemplate === 'custom' ? customName : templates.find(t => t.id === selectedTemplate)?.name;
@@ -290,6 +297,7 @@ interface FreezerProps {
   drawerCount: number;
   freezerType: string;
   drawers: { [drawerId: number]: Item[] };
+  allDrawersFromBothFreezers: { [drawerId: number]: Item[] };
   templates: ItemTemplate[];
   onAddItem: (drawerId: number, item: Item) => void;
   onUpdateItem: (drawerId: number, itemId: string, quantity: number) => void;
@@ -301,7 +309,7 @@ interface FreezerProps {
   onToggleDrawer: (drawerId: number) => void;
 }
 
-export default function Freezer({ title, drawerCount, freezerType, drawers, templates, onAddItem, onUpdateItem, onDeleteItem, onEditItem, onMoveItem, totalDrawers, openDrawerId, onToggleDrawer }: FreezerProps) {
+export default function Freezer({ title, drawerCount, freezerType, drawers, allDrawersFromBothFreezers, templates, onAddItem, onUpdateItem, onDeleteItem, onEditItem, onMoveItem, totalDrawers, openDrawerId, onToggleDrawer }: FreezerProps) {
   return (
     <div className="freezer">
       <h2>{title} ({drawerCount} šuplíků)</h2>
@@ -312,7 +320,7 @@ export default function Freezer({ title, drawerCount, freezerType, drawers, temp
             drawerId={drawerId}
             items={drawers[drawerId] || []}
             templates={templates}
-            allDrawers={drawers}
+            allDrawers={allDrawersFromBothFreezers}
             onAddItem={onAddItem}
             onUpdateItem={onUpdateItem}
             onDeleteItem={onDeleteItem}

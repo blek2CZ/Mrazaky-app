@@ -614,8 +614,8 @@ function App() {
   };
 
   return (
-    <>
-      <div className="app-header">
+    <div onClick={() => setOpenSection(null)}>
+      <div className="app-header" onClick={(e) => e.stopPropagation()}>
         <h1>🧊 Evidence mrazáků</h1>
         <div className="app-actions">
           {firebaseConfigured ? (
@@ -667,22 +667,26 @@ function App() {
         />
       )}
       
-      <TemplatesManager
-        templates={templates}
-        onAddTemplate={handleAddTemplate}
-        onEditTemplate={handleEditTemplate}
-        onDeleteTemplate={handleDeleteTemplate}
-        isTemplateUsed={isTemplateUsed}
-        isExpanded={openSection === 'template-manager'}
-        onToggle={() => setOpenSection(openSection === 'template-manager' ? null : 'template-manager')}
-      />
+      <div onClick={(e) => e.stopPropagation()}>
+        <TemplatesManager
+          templates={templates}
+          onAddTemplate={handleAddTemplate}
+          onEditTemplate={handleEditTemplate}
+          onDeleteTemplate={handleDeleteTemplate}
+          isTemplateUsed={isTemplateUsed}
+          isExpanded={openSection === 'template-manager'}
+          onToggle={() => setOpenSection(openSection === 'template-manager' ? null : 'template-manager')}
+        />
+      </div>
 
-      <Freezer
-        title="Malý mrazák"
-        drawerCount={3}
-        freezerType="small"
-        drawers={freezerData.small}
-        templates={templates}
+      <div onClick={(e) => e.stopPropagation()}>
+        <Freezer
+          title="Malý mrazák"
+          drawerCount={3}
+          freezerType="small"
+          drawers={freezerData.small}
+          allDrawersFromBothFreezers={{ ...freezerData.small, ...freezerData.large }}
+          templates={templates}
         onAddItem={(drawerId, item) => handleAddItem('small', drawerId, item)}
         onUpdateItem={(drawerId, itemId, quantity) => handleUpdateItem('small', drawerId, itemId, quantity)}
         onDeleteItem={(drawerId, itemId) => handleDeleteItem('small', drawerId, itemId)}
@@ -696,13 +700,16 @@ function App() {
           const sectionId = `small-${drawerId}`;
           setOpenSection(openSection === sectionId ? null : sectionId);
         }}
-      />
+        />
+      </div>
 
-      <Freezer
+      <div onClick={(e) => e.stopPropagation()}>
+        <Freezer
         title="Velký mrazák"
         drawerCount={7}
         freezerType="large"
         drawers={freezerData.large}
+        allDrawersFromBothFreezers={{ ...freezerData.small, ...freezerData.large }}
         templates={templates}
         onAddItem={(drawerId, item) => handleAddItem('large', drawerId, item)}
         onUpdateItem={(drawerId, itemId, quantity) => handleUpdateItem('large', drawerId, itemId, quantity)}
@@ -717,8 +724,9 @@ function App() {
           const sectionId = `large-${drawerId}`;
           setOpenSection(openSection === sectionId ? null : sectionId);
         }}
-      />
-    </>
+        />
+      </div>
+    </div>
   );
 }
 
