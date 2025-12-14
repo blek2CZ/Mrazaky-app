@@ -105,22 +105,26 @@ export const syncDataToFirebase = async (
     
     // Rozpoznání specifických Firebase chyb
     if (error.code === 'resource-exhausted' || error.message?.includes('quota')) {
+      console.error('🚫 Vracím QUOTA chybu');
       return { 
         success: false, 
         reason: '🚫 Denní kvóta Firebase byla překročena. Zkuste to zítra nebo použijte jiný synchronizační kód.' 
       };
     } else if (error.code === 'permission-denied') {
+      console.error('🚫 Vracím PERMISSION chybu');
       return { 
         success: false, 
         reason: '🚫 Přístup odepřen. Zkontrolujte synchronizační kód.' 
       };
     } else if (error.code === 'unavailable' || error.message?.includes('network')) {
+      console.error('📡 Vracím NETWORK chybu');
       return { 
         success: false, 
         reason: '📡 Nelze se připojit k databázi. Zkontrolujte připojení k internetu.' 
       };
     }
     
+    console.error('❓ Vracím OBECNOU chybu');
     return { 
       success: false, 
       reason: `Chyba: ${error.message || 'Neznámá chyba při zápisu do cloudu'}` 
