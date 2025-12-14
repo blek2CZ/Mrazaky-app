@@ -19,6 +19,7 @@ function App() {
   const [openSection, setOpenSection] = useState<string | null>(null);
   const unsubscribeRef = useRef<(() => void) | null>(null);
   const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const initialSyncDone = useRef<boolean>(false);
   const firebaseConfigured = isFirebaseConfigured();
 
   useEffect(() => {
@@ -39,10 +40,16 @@ function App() {
       const unsubscribe = subscribeToSync(
         syncCode, 
         ({ freezerData: newFreezerData, templates: newTemplates }) => {
+          console.log('☁️ Přijata data z Firebase');
           setFreezerData(newFreezerData);
           setTemplates(newTemplates);
           saveFreezerData(newFreezerData);
           saveItemTemplates(newTemplates);
+          // Označ, že první sync proběhl
+          if (!initialSyncDone.current) {
+            initialSyncDone.current = true;
+            console.log('✅ První synchronizace dokončena - auto-sync aktivován');
+          }
         },
         () => {
           // Callback když je kód invalidován
@@ -67,7 +74,8 @@ function App() {
 
   // Auto-sync when data changes
   useEffect(() => {
-    if (syncCode && isSyncing && firebaseConfigured) {
+    // Neposílej data do Firebase dokud neproběhne první načtení dat z Firebase
+    if (syncCode && isSyncing && firebaseConfigured && initialSyncDone.current) {
       // Zruš předchozí timeout pokud existuje
       if (syncTimeoutRef.current) {
         clearTimeout(syncTimeoutRef.current);
@@ -88,6 +96,7 @@ function App() {
           const newUnsubscribe = subscribeToSync(
             syncCode,
             ({ freezerData: newFreezerData, templates: newTemplates }) => {
+              console.log('☁️ Přijata data z Firebase');
               setFreezerData(newFreezerData);
               setTemplates(newTemplates);
               saveFreezerData(newFreezerData);
@@ -95,6 +104,7 @@ function App() {
             },
             () => {
               alert('⚠️ Synchronizační kód již není platný!\n\nAdmin změnil synchronizační kód. Budete odpojeni a můžete zadat nový kód.');
+              initialSyncDone.current = false;
               clearSyncCode();
               setSyncCode(null);
               setIsSyncing(false);
@@ -108,6 +118,7 @@ function App() {
           const newUnsubscribe = subscribeToSync(
             syncCode,
             ({ freezerData: newFreezerData, templates: newTemplates }) => {
+              console.log('☁️ Přijata data z Firebase');
               setFreezerData(newFreezerData);
               setTemplates(newTemplates);
               saveFreezerData(newFreezerData);
@@ -115,6 +126,7 @@ function App() {
             },
             () => {
               alert('⚠️ Synchronizační kód již není platný!');
+              initialSyncDone.current = false;
               clearSyncCode();
               setSyncCode(null);
               setIsSyncing(false);
@@ -491,6 +503,7 @@ function App() {
           const newUnsubscribe = subscribeToSync(
             syncCode,
             ({ freezerData: newFreezerData, templates: newTemplates }) => {
+              console.log('☁️ Přijata data z Firebase');
               setFreezerData(newFreezerData);
               setTemplates(newTemplates);
               saveFreezerData(newFreezerData);
@@ -498,6 +511,7 @@ function App() {
             },
             () => {
               alert('⚠️ Synchronizační kód již není platný!\n\nAdmin změnil synchronizační kód. Budete odpojeni a můžete zadat nový kód.');
+              initialSyncDone.current = false;
               clearSyncCode();
               setSyncCode(null);
               setIsSyncing(false);
@@ -571,6 +585,7 @@ function App() {
     // Invalidujeme kód pro ostatní uživatele
     await invalidateSyncCode(syncCode);
     
+    initialSyncDone.current = false;
     clearSyncCode();
     setSyncCode(null);
     setIsSyncing(false);
