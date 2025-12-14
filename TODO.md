@@ -11,13 +11,15 @@
 - [x] Analýza projektu provedena
 - [x] TODO soubor vytvořen
 - [x] Testovací infrastruktura připravena
+- [x] **1.1 Setup testů (Vitest + Testing Library)**
+  - [x] Instalace dependencies (vitest, @testing-library/react, happy-dom)
+  - [x] Konfigurace vitest.config.ts
+  - [x] Setup soubory (__tests__, __mocks__)
+  - [x] První smoke test (5 testů, 100% passing ✅)
+  - [x] Firebase mocks pro izolované testy
 
 ### 🚧 Probíhá
-- [ ] **1.1 Setup testů (Vitest + Testing Library)**
-  - [ ] Instalace dependencies
-  - [ ] Konfigurace vitest.config.ts
-  - [ ] Setup soubory (__tests__, __mocks__)
-  - [ ] První smoke test
+- [ ] **1.2 Vyčlenění modalů z App.tsx** - PŘIPRAVENO K ZAHÁJENÍ
 
 ### 📝 Čeká
 - [ ] **1.2 Vyčlenění modalů z App.tsx**

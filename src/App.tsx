@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import Freezer from './Freezer';
 import TemplatesManager from './TemplatesManager';
 import SyncModal from './SyncModal';
+import LoadingOverlay from './components/LoadingOverlay';
 import { FreezerData, Item, ItemTemplate } from './types';
 import { loadFreezerData, saveFreezerData, loadItemTemplates, saveItemTemplates } from './storage';
 import { exportData, importData } from './dataSync';
@@ -1049,15 +1050,7 @@ function App() {
       />
 
       {/* Loading overlay při nahrávání dat */}
-      {isUploading && (
-        <div className="loading-overlay">
-          <div className="loading-content">
-            <div className="loading-spinner">⏳</div>
-            <h2>Nahrávám data do cloudu...</h2>
-            <p>Prosím čekejte, aplikace bude brzy dostupná.</p>
-          </div>
-        </div>
-      )}
+      {isUploading && <LoadingOverlay />}
     </div>
   );
 }
