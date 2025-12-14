@@ -66,7 +66,7 @@ function Drawer({ drawerId, items, templates, onAddItem, onUpdateItem, onDeleteI
             <select value={selectedTemplate} onChange={(e) => setSelectedTemplate(e.target.value)}>
               <option value="">-- Vyberte --</option>
               <option value="custom">+ Nová položka</option>
-              {templates.map(template => (
+              {[...templates].sort((a, b) => a.name.localeCompare(b.name, 'cs')).map(template => (
                 <option key={template.id} value={template.id}>{template.name}</option>
               ))}
             </select>

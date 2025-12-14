@@ -32,7 +32,7 @@ export default function TemplatesManager({ templates, onAddTemplate, onDeleteTem
       {isExpanded && (
         <>
           <div className="templates-list">
-        {templates.map(template => (
+        {[...templates].sort((a, b) => a.name.localeCompare(b.name, 'cs')).map(template => (
           <div key={template.id} className="template-item">
             <span className="template-name">{template.name}</span>
             <div className="template-actions">
