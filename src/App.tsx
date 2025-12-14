@@ -15,6 +15,7 @@ function App() {
   const [syncCode, setSyncCode] = useState<string | null>(getSyncCode());
   const [showSyncModal, setShowSyncModal] = useState<'generate' | 'enter' | null>(null);
   const [showDisconnectModal, setShowDisconnectModal] = useState(false);
+  const [showSyncConfirm, setShowSyncConfirm] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [openSection, setOpenSection] = useState<string | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -200,19 +201,15 @@ function App() {
   // Manuální sync funkce
   const handleManualSync = async () => {
     if (!syncCode || !firebaseConfigured || !hasUnsavedChanges) return;
-    
-    const shouldSync = window.confirm(
-      `📊 Máte ${changeCount} neuložených změn.\n\n` +
-      'Chcete je odeslat do cloudu?\n\n' +
-      'OK = Odeslat hned\n' +
-      'Zrušit = Pokračovat v úpravách'
-    );
-    
-    if (!shouldSync) return;
+    setShowSyncConfirm(true);
+  };
+
+  const handleConfirmSync = async () => {
+    setShowSyncConfirm(false);
     
     try {
       const newTimestamp = Date.now();
-      const result = await syncDataToFirebase(syncCode, freezerData, templates, newTimestamp);
+      const result = await syncDataToFirebase(syncCode!, freezerData, templates, newTimestamp);
       
       if (result.success && result.serverTimestamp) {
         setLastModified(result.serverTimestamp);
@@ -693,6 +690,61 @@ function App() {
           onClose={() => setShowDisconnectModal(false)}
           onConfirm={handleConfirmDisconnect}
         />
+      )}
+
+      {showSyncConfirm && (
+        <div style={{
+          position: 'fixed',
+          bottom: '20px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 1001,
+          backgroundColor: 'white',
+          padding: '20px 30px',
+          borderRadius: '12px',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+          minWidth: '300px',
+          maxWidth: '500px',
+          animation: 'slideUp 0.3s ease-out'
+        }}>
+          <div style={{ marginBottom: '15px', fontSize: '16px', fontWeight: '500' }}>
+            📊 Máte <strong>{changeCount}</strong> {changeCount === 1 ? 'neuloženou změnu' : changeCount >= 2 && changeCount <= 4 ? 'neuložené změny' : 'neuložených změn'}
+          </div>
+          <div style={{ marginBottom: '20px', color: '#666' }}>
+            Chcete je odeslat do cloudu?
+          </div>
+          <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+            <button
+              onClick={() => setShowSyncConfirm(false)}
+              style={{
+                padding: '10px 20px',
+                fontSize: '14px',
+                backgroundColor: '#f5f5f5',
+                border: '1px solid #ddd',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontWeight: '500'
+              }}
+            >
+              Pokračovat v úpravách
+            </button>
+            <button
+              onClick={handleConfirmSync}
+              style={{
+                padding: '10px 20px',
+                fontSize: '14px',
+                backgroundColor: '#4CAF50',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontWeight: '500'
+              }}
+            >
+              ☁️ Odeslat hned
+            </button>
+          </div>
+        </div>
       )}
 
       {isSyncing && hasUnsavedChanges && (
