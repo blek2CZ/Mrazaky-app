@@ -128,13 +128,13 @@ function Drawer({ drawerId, items, templates, allDrawers, onAddItem, onUpdateIte
                 type="number"
                 className="quantity-input"
                 value={quantity}
-                onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
+                onChange={(e) => setQuantity(e.target.value === '' ? 0 : parseInt(e.target.value))}
                 min="1"
               />
             </div>
             <div className="form-field">
               <label>&nbsp;</label>
-              <button onClick={handleAdd} disabled={!selectedTemplate || (selectedTemplate === 'custom' && !customName)}>
+              <button onClick={handleAdd} disabled={!selectedTemplate || (selectedTemplate === 'custom' && !customName) || quantity < 1}>
                 Přidat
               </button>
             </div>
