@@ -35,6 +35,7 @@ function App() {
     const stored = localStorage.getItem('mrazaky-lastModified');
     return stored ? parseInt(stored) : 0; // 0 = ještě nebyly načteny data z Firebase
   });
+  const [showSyncActions, setShowSyncActions] = useState(false);
   const initialSyncDone = useRef<boolean>(false);
   const firebaseConfigured = isFirebaseConfigured();
 
@@ -699,28 +700,35 @@ function App() {
       <div className="app-header" onClick={(e) => e.stopPropagation()}>
         <h1>🧊 Evidence mrazáků</h1>
         <div className="app-actions">
-          {firebaseConfigured ? (
-            syncCode ? (
-              <>
-                <div className="sync-status connected">
+          <button onClick={() => setShowSyncActions(!showSyncActions)} title="Zobrazit/skrýt možnosti synchronizace">
+            {showSyncActions ? '👁️ Skrýt sync' : '👁️ Zobrazit sync'}
+          </button>
+          {showSyncActions && (
+            <>
+              {firebaseConfigured ? (
+                syncCode ? (
+                  <>
+                    <div className="sync-status connected">
+                      <span className="sync-indicator"></span>
+                      Sync: {syncCode}
+                    </div>
+                    <button onClick={handleDisconnectSync} title="Odpojit a změnit synchronizaci">🚫 Odpojit</button>
+                  </>
+                ) : (
+                  <>
+                    <button onClick={() => setShowSyncModal('enter')} title="Zadat existující synchronizační kód">🔑 Zadat kód</button>
+                  </>
+                )
+              ) : (
+                <div className="sync-status disconnected" title="Firebase není nakonfigurován">
                   <span className="sync-indicator"></span>
-                  Sync: {syncCode}
+                  Sync nedostupný
                 </div>
-                <button onClick={handleDisconnectSync} title="Odpojit a změnit synchronizaci">🚫 Odpojit</button>
-              </>
-            ) : (
-              <>
-                <button onClick={() => setShowSyncModal('enter')} title="Zadat existující synchronizační kód">🔑 Zadat kód</button>
-              </>
-            )
-          ) : (
-            <div className="sync-status disconnected" title="Firebase není nakonfigurován">
-              <span className="sync-indicator"></span>
-              Sync nedostupný
-            </div>
+              )}
+              <button onClick={handleExport} title="Stáhnout zálohu dat">📥 Export</button>
+              <button onClick={handleImportClick} title="Nahrát data ze zálohy">📤 Import</button>
+            </>
           )}
-          <button onClick={handleExport} title="Stáhnout zálohu dat">📥 Export</button>
-          <button onClick={handleImportClick} title="Nahrát data ze zálohy">📤 Import</button>
           <input
             ref={fileInputRef}
             type="file"
