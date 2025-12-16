@@ -919,7 +919,7 @@ function App() {
         </div>
         {openSection === 'search' && (
           <div className="search-section" onClick={(e) => e.stopPropagation()}>
-            <div style={{ padding: '1rem', backgroundColor: '#e8e8e8', borderRadius: '6px', marginBottom: '1rem' }}>
+            <div style={{ padding: '1rem', backgroundColor: 'rgb(183, 183, 183)', borderRadius: '6px', marginBottom: '1rem' }}>
               <input
                 type="text"
                 placeholder="Zadejte název položky..."
