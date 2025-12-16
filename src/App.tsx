@@ -977,10 +977,8 @@ function App() {
                         <div key={index} className="item">
                           <div className="item-info">
                             <span className="item-name">{result.item.name}</span>
-                            <span className="item-quantity">
-                              {result.item.quantity} ks
-                              <span className="item-name">, {result.freezerName} → Šuplík {result.drawerNum}</span>
-                            </span>
+                            <span className="item-quantity">{result.item.quantity} ks, </span>
+                            <span className="item-name">{result.freezerName} → Šuplík {result.drawerNum}</span>
                           </div>
                         </div>
                       ))}
