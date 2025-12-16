@@ -224,4 +224,14 @@
   .search-section .item > div:first-child > div:first-child {
     text-align: left !important;
   }
+  
+  .search-section .drawer-items {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+  
+  .search-section .item {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
 }
