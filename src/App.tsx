@@ -972,17 +972,15 @@ function App() {
                     <p style={{ color: '#646cff', fontWeight: '600', marginBottom: '0.75rem', padding: '0 1rem' }}>
                       Nalezeno {results.length} {results.length === 1 ? 'položka' : results.length < 5 ? 'položky' : 'položek'}:
                     </p>
-                    <div className="drawer-items">
+                    <div className="items-list">
                       {results.map((result, index) => (
-                        <div key={index} className="item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <div style={{ flex: 1 }}>
-                            <div style={{ fontWeight: '600', fontSize: '1.1rem' }}>{result.item.name}</div>
-                            <div style={{ color: '#999', fontSize: '0.85rem', marginTop: '0.25rem' }}>
-                              {result.freezerName} → Šuplík {result.drawerNum}
-                            </div>
+                        <div key={index} className="item">
+                          <div className="item-info">
+                            <span className="item-name">{result.item.name}</span>
+                            <span className="item-quantity">{result.item.quantity} ks</span>
                           </div>
-                          <div className="item-quantity" style={{ fontSize: '1rem' }}>
-                            {result.item.quantity} ks
+                          <div className="item-location">
+                            {result.freezerName} → Šuplík {result.drawerNum}
                           </div>
                         </div>
                       ))}

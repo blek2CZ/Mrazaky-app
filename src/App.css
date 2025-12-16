@@ -211,6 +211,12 @@
   font-size: 0.9rem;
 }
 
+.item-location {
+  color: #999;
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
+}
+
 @media (max-width: 768px) {
   .search-modal {
     max-width: 95vw;
