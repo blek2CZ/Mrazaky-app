@@ -910,13 +910,10 @@ function App() {
       )}
       
       {/* Vyhledávání */}
-      <div className="freezer-container">
-        <div className="freezer-header">
-          <h2 className="freezer-title">🔍 Vyhledávání</h2>
-          <button 
-            className="expand-button"
-            onClick={() => setOpenSection(openSection === 'search' ? null : 'search')}
-          >
+      <div className="templates-manager">
+        <div className="templates-header" onClick={() => setOpenSection(openSection === 'search' ? null : 'search')}>
+          <h2>🔍 Vyhledávání</h2>
+          <button type="button" className="toggle-button" onClick={(e) => { e.stopPropagation(); setOpenSection(openSection === 'search' ? null : 'search'); }}>
             {openSection === 'search' ? '▼' : '▶'}
           </button>
         </div>
