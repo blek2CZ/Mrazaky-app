@@ -911,7 +911,7 @@ function App() {
       
       {/* Vyhledávání */}
       <div className="templates-manager">
-        <div className="templates-header" onClick={() => setOpenSection(openSection === 'search' ? null : 'search')}>
+        <div className="templates-header" onClick={(e) => { e.stopPropagation(); setOpenSection(openSection === 'search' ? null : 'search'); }}>
           <h2>🔍 Vyhledávání</h2>
           <button type="button" className="toggle-button" onClick={(e) => { e.stopPropagation(); setOpenSection(openSection === 'search' ? null : 'search'); }}>
             {openSection === 'search' ? '▼' : '▶'}
