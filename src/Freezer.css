@@ -291,7 +291,7 @@
 
 .form-row button {
   flex: 0 0 auto;
-  align-self: flex-end;
+  margin-top: calc(0.9em * 1.5 + 0.25rem);
 }
 
 .form-field {
