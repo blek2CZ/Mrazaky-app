@@ -371,6 +371,19 @@
     outline: none !important;
     box-shadow: 0 0 0 2px #646cff !important;
   }
+  
+  .add-item-form button:disabled {
+    opacity: 0.5 !important;
+    cursor: not-allowed !important;
+    background-color: #cccccc !important;
+    border-color: #999999 !important;
+    color: #666666 !important;
+  }
+  
+  .add-item-form button:disabled:hover {
+    background-color: #cccccc !important;
+    color: #666666 !important;
+  }
 }
 
 @media (prefers-color-scheme: light) {
