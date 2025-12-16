@@ -930,7 +930,7 @@ function App() {
                   width: '100%',
                   padding: '0.5rem',
                   fontSize: '1rem',
-                  border: '1px solid #999',
+                  border: '1px solid #666',
                   borderRadius: '4px',
                   backgroundColor: 'white',
                   color: '#333'
