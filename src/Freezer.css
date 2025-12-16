@@ -358,11 +358,14 @@
 
   .add-item-form button:focus,
   .add-item-form button:focus-visible {
-    outline: 2px solid #646cff !important;
-    outline-offset: 2px !important;
-    outline-color: #646cff !important;
+    outline: none !important;
     border-color: #646cff !important;
-    -webkit-appearance: none !important;
+    box-shadow: 0 0 0 2px #646cff !important;
+  }
+  
+  .add-item-form button:active {
+    outline: none !important;
+    box-shadow: 0 0 0 2px #646cff !important;
   }
 }
 
