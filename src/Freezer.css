@@ -327,6 +327,34 @@
   }
 }
 
+@media (min-width: 769px) {
+  .add-item-form .form-field label {
+    color: #666;
+  }
+
+  .add-item-form input,
+  .add-item-form select {
+    background-color: #e8e8e8;
+    color: #333;
+    border: 1px solid #999;
+  }
+
+  .add-item-form input:focus,
+  .add-item-form select:focus {
+    background-color: #ffffff;
+    border-color: #646cff;
+  }
+
+  .form-row button {
+    border-color: #646cff;
+  }
+
+  .form-row button:hover {
+    background-color: #646cff;
+    color: white;
+  }
+}
+
 @media (prefers-color-scheme: light) {
   .freezer {
     background-color: #f0f0f0;
