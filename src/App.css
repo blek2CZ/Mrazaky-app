@@ -231,7 +231,12 @@
   }
   
   .search-section .item {
-    padding-left: 1rem !important;
-    padding-right: 1rem !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+  
+  .search-section p {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
   }
 }
