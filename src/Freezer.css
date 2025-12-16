@@ -329,29 +329,29 @@
 
 @media (min-width: 769px) {
   .add-item-form .form-field label {
-    color: #666;
+    color: #666 !important;
   }
 
   .add-item-form input,
   .add-item-form select {
-    background-color: #e8e8e8;
-    color: #333;
-    border: 1px solid #999;
+    background-color: #e8e8e8 !important;
+    color: #333 !important;
+    border: 1px solid #999 !important;
   }
 
   .add-item-form input:focus,
   .add-item-form select:focus {
-    background-color: #ffffff;
-    border-color: #646cff;
+    background-color: #ffffff !important;
+    border-color: #646cff !important;
   }
 
-  .form-row button {
-    border-color: #646cff;
+  .add-item-form .form-row button {
+    border-color: #646cff !important;
   }
 
-  .form-row button:hover {
-    background-color: #646cff;
-    color: white;
+  .add-item-form .form-row button:hover {
+    background-color: #646cff !important;
+    color: white !important;
   }
 }
 
