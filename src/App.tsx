@@ -36,7 +36,6 @@ function App() {
     return stored ? parseInt(stored) : 0; // 0 = ještě nebyly načteny data z Firebase
   });
   const [showSyncActions, setShowSyncActions] = useState(false);
-  const [showSearchModal, setShowSearchModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const initialSyncDone = useRef<boolean>(false);
   const firebaseConfigured = isFirebaseConfigured();
@@ -912,16 +911,96 @@ function App() {
       
       {/* Vyhledávání */}
       <div className="freezer-container">
-        <div className="freezer-header" onClick={() => setShowSearchModal(true)} style={{ cursor: 'pointer' }}>
+        <div 
+          className="freezer-header" 
+          onClick={() => setOpenSection(openSection === 'search' ? null : 'search')}
+          style={{ cursor: 'pointer' }}
+        >
           <h2 className="freezer-title">🔍 Vyhledávání</h2>
-          <button 
-            onClick={(e) => { e.stopPropagation(); setShowSearchModal(true); }} 
-            className="expand-button"
-            title="Otevřít vyhledávání"
-          >
-            Hledat
+          <button className="expand-button">
+            {openSection === 'search' ? '▼' : '▶'}
           </button>
         </div>
+        {openSection === 'search' && (
+          <div className="search-section" onClick={(e) => e.stopPropagation()}>
+            <div style={{ padding: '1rem', backgroundColor: '#2a2a2a', borderRadius: '6px', marginBottom: '1rem' }}>
+              <input
+                type="text"
+                placeholder="Zadejte název položky..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                autoFocus
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  fontSize: '1rem',
+                  border: '2px solid #646cff',
+                  borderRadius: '4px',
+                  backgroundColor: '#1a1a1a',
+                  color: 'white'
+                }}
+              />
+            </div>
+            <div className="search-results-container">
+              {searchQuery.trim() === '' ? (
+                <p style={{ color: '#999', textAlign: 'center', padding: '2rem', fontStyle: 'italic' }}>
+                  Začněte psát pro vyhledávání...
+                </p>
+              ) : (() => {
+                const results: { item: Item; freezerType: string; freezerName: string; drawerNum: number }[] = [];
+                
+                const freezers = [
+                  { type: 'small' as const, name: 'Malý', data: freezerData.small },
+                  { type: 'large' as const, name: 'Velký', data: freezerData.large },
+                  { type: 'smallMama' as const, name: 'Malý mama', data: freezerData.smallMama }
+                ];
+                
+                freezers.forEach(freezer => {
+                  Object.entries(freezer.data).forEach(([drawerKey, items]) => {
+                    const drawerNum = parseInt(drawerKey.replace('drawer', ''));
+                    items.forEach((item: Item) => {
+                      if (item.name.toLowerCase().includes(searchQuery.toLowerCase())) {
+                        results.push({
+                          item,
+                          freezerType: freezer.type,
+                          freezerName: freezer.name,
+                          drawerNum
+                        });
+                      }
+                    });
+                  });
+                });
+                
+                return results.length > 0 ? (
+                  <>
+                    <p style={{ color: '#646cff', fontWeight: '600', marginBottom: '0.75rem', padding: '0 1rem' }}>
+                      Nalezeno {results.length} {results.length === 1 ? 'položka' : results.length < 5 ? 'položky' : 'položek'}:
+                    </p>
+                    <div className="drawer-items">
+                      {results.map((result, index) => (
+                        <div key={index} className="item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontWeight: '600', fontSize: '1.1rem' }}>{result.item.name}</div>
+                            <div style={{ color: '#999', fontSize: '0.85rem', marginTop: '0.25rem' }}>
+                              {result.freezerName} → Šuplík {result.drawerNum}
+                            </div>
+                          </div>
+                          <div className="item-quantity" style={{ fontSize: '1rem' }}>
+                            {result.item.quantity} ks
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <p style={{ textAlign: 'center', padding: '2rem', color: '#999', fontSize: '1.1rem' }}>
+                    ❌ Nenalezeno
+                  </p>
+                );
+              })()}
+            </div>
+          </div>
+        )}
       </div>
 
       <TemplatesManager
@@ -1014,77 +1093,6 @@ function App() {
 
       {/* Loading overlay při nahrávání dat */}
       {isUploading && <LoadingOverlay />}
-
-      {/* Vyhledávací modal */}
-      {showSearchModal && (
-        <div className="modal-overlay" onClick={() => setShowSearchModal(false)}>
-          <div className="modal search-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>🔍 Vyhledat položku</h2>
-              <button className="close-button" onClick={() => setShowSearchModal(false)}>×</button>
-            </div>
-            <div className="modal-content">
-              <input
-                type="text"
-                placeholder="Zadejte název položky..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                autoFocus
-                className="search-input"
-              />
-              <div className="search-results">
-                {searchQuery.trim() === '' ? (
-                  <p className="search-hint">Začněte psát pro vyhledávání...</p>
-                ) : (() => {
-                  const results: { item: Item; freezerType: string; freezerName: string; drawerNum: number }[] = [];
-                  
-                  // Prohledat všechny mrazáky
-                  const freezers = [
-                    { type: 'small' as const, name: 'Malý', data: freezerData.small },
-                    { type: 'large' as const, name: 'Velký', data: freezerData.large },
-                    { type: 'smallMama' as const, name: 'Malý mama', data: freezerData.smallMama }
-                  ];
-                  
-                  freezers.forEach(freezer => {
-                    Object.entries(freezer.data).forEach(([drawerKey, items]) => {
-                      const drawerNum = parseInt(drawerKey.replace('drawer', ''));
-                      items.forEach((item: Item) => {
-                        if (item.name.toLowerCase().includes(searchQuery.toLowerCase())) {
-                          results.push({
-                            item,
-                            freezerType: freezer.type,
-                            freezerName: freezer.name,
-                            drawerNum
-                          });
-                        }
-                      });
-                    });
-                  });
-                  
-                  return results.length > 0 ? (
-                    <>
-                      <p className="search-count">Nalezeno {results.length} {results.length === 1 ? 'položka' : results.length < 5 ? 'položky' : 'položek'}:</p>
-                      <ul className="search-result-list">
-                        {results.map((result, index) => (
-                          <li key={index} className="search-result-item">
-                            <span className="result-name">{result.item.name}</span>
-                            <span className="result-location">
-                              {result.freezerName} → Šuplík {result.drawerNum}
-                            </span>
-                            <span className="result-quantity">({result.item.quantity} ks)</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </>
-                  ) : (
-                    <p className="search-no-results">❌ Nenalezeno</p>
-                  );
-                })()}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
