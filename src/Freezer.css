@@ -279,12 +279,6 @@
   gap: 0.75rem;
 }
 
-.add-item-form select {
-  background-color: #ffffff;
-  color: #000000;
-  border: 1px solid #ccc;
-}
-
 .form-row {
   display: flex;
   gap: 0.5rem;
@@ -312,9 +306,6 @@
 
 .quantity-input {
   width: 80px;
-  background-color: #ffffff !important;
-  color: #000000 !important;
-  border: 1px solid #ccc;
 }
 
 @media (max-width: 768px) {
