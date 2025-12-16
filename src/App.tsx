@@ -702,9 +702,6 @@ function App() {
       <div className="app-header" onClick={(e) => e.stopPropagation()}>
         <h1>🧊 Evidence mrazáků</h1>
         <div className="app-actions">
-          <button onClick={() => setShowSearchModal(true)} title="Vyhledat položku">
-            🔍 Hledat
-          </button>
           <button onClick={() => setShowSyncActions(!showSyncActions)} title="Zobrazit/skrýt možnosti synchronizace">
             {showSyncActions ? '👁️ Skrýt sync' : '👁️ Zobrazit sync'}
           </button>
@@ -913,6 +910,20 @@ function App() {
         </div>
       )}
       
+      {/* Vyhledávání */}
+      <div className="freezer-container">
+        <div className="freezer-header" onClick={() => setShowSearchModal(true)} style={{ cursor: 'pointer' }}>
+          <h2 className="freezer-title">🔍 Vyhledávání</h2>
+          <button 
+            onClick={(e) => { e.stopPropagation(); setShowSearchModal(true); }} 
+            className="expand-button"
+            title="Otevřít vyhledávání"
+          >
+            Hledat
+          </button>
+        </div>
+      </div>
+
       <TemplatesManager
         templates={templates}
         onAddTemplate={handleAddTemplate}
