@@ -919,7 +919,7 @@ function App() {
         </div>
         {openSection === 'search' && (
           <div className="search-section" onClick={(e) => e.stopPropagation()}>
-            <div style={{ padding: '1rem', backgroundColor: '#2a2a2a', borderRadius: '6px', marginBottom: '1rem' }}>
+            <div style={{ padding: '1rem', backgroundColor: '#e8e8e8', borderRadius: '6px', marginBottom: '1rem' }}>
               <input
                 type="text"
                 placeholder="Zadejte název položky..."
@@ -928,12 +928,12 @@ function App() {
                 autoFocus
                 style={{
                   width: '100%',
-                  padding: '0.75rem',
+                  padding: '0.5rem',
                   fontSize: '1rem',
-                  border: '2px solid #646cff',
+                  border: '1px solid #999',
                   borderRadius: '4px',
-                  backgroundColor: '#1a1a1a',
-                  color: 'white'
+                  backgroundColor: 'white',
+                  color: '#333'
                 }}
               />
             </div>
