@@ -212,24 +212,8 @@
 }
 
 .item-location {
-  color: #999;
   font-size: 0.85rem;
   margin-top: 0.25rem;
-}
-
-.search-section .item-info {
-  flex-wrap: nowrap;
-  white-space: nowrap;
-  overflow: hidden;
-}
-
-.search-section .item-name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.search-section .item-quantity {
-  flex-shrink: 0;
 }
 
 @media (max-width: 768px) {
