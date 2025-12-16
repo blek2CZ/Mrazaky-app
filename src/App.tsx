@@ -804,11 +804,12 @@ function App() {
               style={{
                 padding: '10px 20px',
                 fontSize: '14px',
-                backgroundColor: '#f5f5f5',
-                border: '1px solid #ddd',
+                backgroundColor: '#ffffff',
+                color: '#333333',
+                border: '2px solid #333333',
                 borderRadius: '6px',
                 cursor: 'pointer',
-                fontWeight: '500'
+                fontWeight: '600'
               }}
             >
               Pokračovat v úpravách
