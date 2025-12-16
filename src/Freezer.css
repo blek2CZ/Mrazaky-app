@@ -289,6 +289,10 @@
   flex: 1;
 }
 
+.form-row .form-field:has(button) {
+  flex: 0 0 auto;
+}
+
 .form-row button {
   flex: 0 0 auto;
 }
