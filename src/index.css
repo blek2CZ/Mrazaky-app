@@ -85,6 +85,12 @@ button:focus-visible {
   outline: 2px solid #646cff;
 }
 
+@media (min-width: 769px) {
+  button {
+    padding: 0.5em 1.2em;
+  }
+}
+
 @media (max-width: 768px) {
   button:focus,
   button:focus-visible {
