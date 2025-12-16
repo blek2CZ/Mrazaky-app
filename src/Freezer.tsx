@@ -132,9 +132,12 @@ function Drawer({ drawerId, items, templates, allDrawers, onAddItem, onUpdateIte
                 min="1"
               />
             </div>
-            <button onClick={handleAdd} disabled={!selectedTemplate || (selectedTemplate === 'custom' && !customName)}>
-              Přidat
-            </button>
+            <div className="form-field">
+              <label>&nbsp;</label>
+              <button onClick={handleAdd} disabled={!selectedTemplate || (selectedTemplate === 'custom' && !customName)}>
+                Přidat
+              </button>
+            </div>
           </div>
         </div>
           )}
