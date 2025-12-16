@@ -122,3 +122,98 @@
     transform: scale(1);
   }
 }
+
+/* Vyhledávací modal */
+.search-modal {
+  max-width: 600px;
+  max-height: 80vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.75rem;
+  font-size: 1rem;
+  border: 2px solid #646cff;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #535bf2;
+  box-shadow: 0 0 0 3px rgba(100, 108, 255, 0.1);
+}
+
+.search-results {
+  overflow-y: auto;
+  max-height: 50vh;
+}
+
+.search-hint {
+  color: #999;
+  text-align: center;
+  padding: 2rem;
+  font-style: italic;
+}
+
+.search-count {
+  color: #646cff;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+.search-no-results {
+  text-align: center;
+  padding: 2rem;
+  color: #999;
+  font-size: 1.1rem;
+}
+
+.search-result-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.search-result-item {
+  padding: 0.75rem;
+  border: 1px solid #333;
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  background-color: #1a1a1a;
+  transition: background-color 0.2s;
+}
+
+.search-result-item:hover {
+  background-color: #252525;
+  border-color: #646cff;
+}
+
+.result-name {
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: #fff;
+}
+
+.result-location {
+  color: #999;
+  font-size: 0.9rem;
+}
+
+.result-quantity {
+  color: #646cff;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 768px) {
+  .search-modal {
+    max-width: 95vw;
+    max-height: 85vh;
+  }
+}

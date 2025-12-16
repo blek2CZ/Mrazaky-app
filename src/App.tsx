@@ -36,6 +36,8 @@ function App() {
     return stored ? parseInt(stored) : 0; // 0 = ještě nebyly načteny data z Firebase
   });
   const [showSyncActions, setShowSyncActions] = useState(false);
+  const [showSearchModal, setShowSearchModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const initialSyncDone = useRef<boolean>(false);
   const firebaseConfigured = isFirebaseConfigured();
 
@@ -700,6 +702,9 @@ function App() {
       <div className="app-header" onClick={(e) => e.stopPropagation()}>
         <h1>🧊 Evidence mrazáků</h1>
         <div className="app-actions">
+          <button onClick={() => setShowSearchModal(true)} title="Vyhledat položku">
+            🔍 Hledat
+          </button>
           <button onClick={() => setShowSyncActions(!showSyncActions)} title="Zobrazit/skrýt možnosti synchronizace">
             {showSyncActions ? '👁️ Skrýt sync' : '👁️ Zobrazit sync'}
           </button>
@@ -998,6 +1003,77 @@ function App() {
 
       {/* Loading overlay při nahrávání dat */}
       {isUploading && <LoadingOverlay />}
+
+      {/* Vyhledávací modal */}
+      {showSearchModal && (
+        <div className="modal-overlay" onClick={() => setShowSearchModal(false)}>
+          <div className="modal search-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>🔍 Vyhledat položku</h2>
+              <button className="close-button" onClick={() => setShowSearchModal(false)}>×</button>
+            </div>
+            <div className="modal-content">
+              <input
+                type="text"
+                placeholder="Zadejte název položky..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                autoFocus
+                className="search-input"
+              />
+              <div className="search-results">
+                {searchQuery.trim() === '' ? (
+                  <p className="search-hint">Začněte psát pro vyhledávání...</p>
+                ) : (() => {
+                  const results: { item: Item; freezerType: string; freezerName: string; drawerNum: number }[] = [];
+                  
+                  // Prohledat všechny mrazáky
+                  const freezers = [
+                    { type: 'small' as const, name: 'Malý', data: freezerData.small },
+                    { type: 'large' as const, name: 'Velký', data: freezerData.large },
+                    { type: 'smallMama' as const, name: 'Malý mama', data: freezerData.smallMama }
+                  ];
+                  
+                  freezers.forEach(freezer => {
+                    Object.entries(freezer.data).forEach(([drawerKey, items]) => {
+                      const drawerNum = parseInt(drawerKey.replace('drawer', ''));
+                      items.forEach((item: Item) => {
+                        if (item.name.toLowerCase().includes(searchQuery.toLowerCase())) {
+                          results.push({
+                            item,
+                            freezerType: freezer.type,
+                            freezerName: freezer.name,
+                            drawerNum
+                          });
+                        }
+                      });
+                    });
+                  });
+                  
+                  return results.length > 0 ? (
+                    <>
+                      <p className="search-count">Nalezeno {results.length} {results.length === 1 ? 'položka' : results.length < 5 ? 'položky' : 'položek'}:</p>
+                      <ul className="search-result-list">
+                        {results.map((result, index) => (
+                          <li key={index} className="search-result-item">
+                            <span className="result-name">{result.item.name}</span>
+                            <span className="result-location">
+                              {result.freezerName} → Šuplík {result.drawerNum}
+                            </span>
+                            <span className="result-quantity">({result.item.quantity} ks)</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  ) : (
+                    <p className="search-no-results">❌ Nenalezeno</p>
+                  );
+                })()}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
