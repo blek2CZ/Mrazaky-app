@@ -911,13 +911,12 @@ function App() {
       
       {/* Vyhledávání */}
       <div className="freezer-container">
-        <div 
-          className="freezer-header" 
-          onClick={() => setOpenSection(openSection === 'search' ? null : 'search')}
-          style={{ cursor: 'pointer' }}
-        >
+        <div className="freezer-header">
           <h2 className="freezer-title">🔍 Vyhledávání</h2>
-          <button className="expand-button">
+          <button 
+            className="expand-button"
+            onClick={() => setOpenSection(openSection === 'search' ? null : 'search')}
+          >
             {openSection === 'search' ? '▼' : '▶'}
           </button>
         </div>
