@@ -343,19 +343,20 @@
   .add-item-form select:focus {
     background-color: #ffffff !important;
     border-color: #646cff !important;
+    outline: none !important;
   }
 
-  .add-item-form .form-row button {
+  .add-item-form button {
     border-color: #646cff !important;
   }
 
-  .add-item-form .form-row button:hover {
+  .add-item-form button:hover {
     background-color: #646cff !important;
     color: white !important;
   }
 
-  .add-item-form .form-row button:focus,
-  .add-item-form .form-row button:focus-visible {
+  .add-item-form button:focus,
+  .add-item-form button:focus-visible {
     outline: 2px solid #646cff !important;
     outline-offset: 2px !important;
     border-color: #646cff !important;
