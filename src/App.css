@@ -234,4 +234,12 @@
     padding-left: 0 !important;
     padding-right: 0 !important;
   }
+  
+  .search-section .item {
+    border-bottom: 1px solid #444;
+  }
+  
+  .search-section .item:last-child {
+    border-bottom: none;
+  }
 }
