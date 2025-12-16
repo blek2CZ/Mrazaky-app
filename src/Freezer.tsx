@@ -21,7 +21,7 @@ interface DrawerProps {
 function Drawer({ drawerId, items, templates, allDrawers, onAddItem, onUpdateItem, onDeleteItem, onEditItem, onMoveItem, freezerType, totalDrawers, isExpanded, onToggle }: DrawerProps) {
   const [selectedTemplate, setSelectedTemplate] = useState('');
   const [customName, setCustomName] = useState('');
-  const [quantity, setQuantity] = useState(1);
+  const [quantity, setQuantity] = useState<number | ''>('');
   const [showAddForm, setShowAddForm] = useState(false);
   const [sortBy, setSortBy] = useState<'name' | 'quantity'>('name');
   const [sortDescending, setSortDescending] = useState(false);
@@ -38,12 +38,13 @@ function Drawer({ drawerId, items, templates, allDrawers, onAddItem, onUpdateIte
 
   const handleAdd = () => {
     const name = selectedTemplate === 'custom' ? customName : templates.find(t => t.id === selectedTemplate)?.name;
-    if (!name || quantity <= 0) return;
+    const qty = typeof quantity === 'number' ? quantity : parseInt(quantity) || 0;
+    if (!name || qty <= 0) return;
 
     const newItem: Item = {
       id: Date.now().toString(),
       name,
-      quantity,
+      quantity: qty,
     };
 
     onAddItem(drawerId, newItem);
@@ -128,13 +129,13 @@ function Drawer({ drawerId, items, templates, allDrawers, onAddItem, onUpdateIte
                 type="number"
                 className="quantity-input"
                 value={quantity}
-                onChange={(e) => setQuantity(e.target.value === '' ? 0 : parseInt(e.target.value))}
+                onChange={(e) => setQuantity(e.target.value === '' ? '' : parseInt(e.target.value))}
                 min="1"
               />
             </div>
             <div className="form-field">
               <label>&nbsp;</label>
-              <button onClick={handleAdd} disabled={!selectedTemplate || (selectedTemplate === 'custom' && !customName) || quantity < 1}>
+              <button onClick={handleAdd} disabled={!selectedTemplate || (selectedTemplate === 'custom' && !customName) || quantity === '' || quantity < 1}>
                 Přidat
               </button>
             </div>
