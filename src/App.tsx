@@ -182,7 +182,7 @@ function App() {
             '⚠️ Detekována desynchronizace dat!\n\n' +
             'Lokální data se liší od dat v cloudu, přestože mají stejný timestamp.\n\n' +
             'OK = Načíst data z cloudu (přepíše lokální)\n' +
-            'Zrušit = Ponechat lokální data'
+            'Zrušit = Ponechat lokální data a označit jako neuložené změny'
           );
           
           if (action) {
@@ -191,7 +191,16 @@ function App() {
             saveFreezerData(data.freezerData);
             saveItemTemplates(data.templates);
             lastSyncedData.current = { freezerData: data.freezerData, templates: data.templates };
+            setHasUnsavedChanges(false);
+            setChangeCount(0);
             setSuccessMessage('Data synchronizována z cloudu');
+            setTimeout(() => setSuccessMessage(null), 5000);
+          } else {
+            // Ponechat lokální data a označit jako neuložené změny
+            setHasUnsavedChanges(true);
+            setChangeCount(1);
+            setShowSyncConfirm(true);
+            setSuccessMessage('Lokální data ponechána - můžete je odeslat nebo zahodit');
             setTimeout(() => setSuccessMessage(null), 5000);
           }
         } else if (showSuccessMessage) {
