@@ -176,6 +176,12 @@ function App() {
         const dataAreSame = JSON.stringify(data.freezerData) === JSON.stringify(freezerData) &&
                             JSON.stringify(data.templates) === JSON.stringify(templates);
         
+        // Aktualizovat lastSyncedData pokud jsou data stejná (vždy, nejen při manuální kontrole)
+        if (dataAreSame && data.lastModified === lastModified) {
+          lastSyncedData.current = { freezerData, templates };
+          console.log('✅ Data jsou synchronizovaná, lastSyncedData aktualizován');
+        }
+        
         // Detekce desynchronizace pouze při manuální kontrole
         if (!dataAreSame && data.lastModified === lastModified && isManualCheck) {
           console.warn('⚠️ DESYNCHRONIZACE: Stejný timestamp, ale jiná data!');
@@ -207,10 +213,6 @@ function App() {
           }
         } else if (showSuccessMessage) {
           if (data.lastModified === lastModified) {
-            // Aktualizovat lastSyncedData i když jsou data stejná
-            if (dataAreSame) {
-              lastSyncedData.current = { freezerData, templates };
-            }
             setSuccessMessage('Data jsou aktuální - stejná verze jako v cloudu');
             setTimeout(() => setSuccessMessage(null), 5000);
           } else {
