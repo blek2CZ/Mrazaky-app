@@ -170,8 +170,31 @@ function App() {
           setTimeout(() => setSuccessMessage(null), 5000);
         }
       } else {
-        console.log('✅ Lokální data jsou aktuální nebo novější než server');
-        if (showSuccessMessage) {
+        console.log('✅ Lokální timestamp je stejný nebo novější než server');
+        
+        // Porovnej skutečná data, ne jen timestamp
+        const dataAreSame = JSON.stringify(data.freezerData) === JSON.stringify(freezerData) &&
+                            JSON.stringify(data.templates) === JSON.stringify(templates);
+        
+        if (!dataAreSame && data.lastModified === lastModified) {
+          console.warn('⚠️ DESYNCHRONIZACE: Stejný timestamp, ale jiná data!');
+          const action = window.confirm(
+            '⚠️ Detekována desynchronizace dat!\n\n' +
+            'Lokální data se liší od dat v cloudu, přestože mají stejný timestamp.\n\n' +
+            'OK = Načíst data z cloudu (přepíše lokální)\n' +
+            'Zrušit = Ponechat lokální data'
+          );
+          
+          if (action) {
+            setFreezerData(data.freezerData);
+            setTemplates(data.templates);
+            saveFreezerData(data.freezerData);
+            saveItemTemplates(data.templates);
+            lastSyncedData.current = { freezerData: data.freezerData, templates: data.templates };
+            setSuccessMessage('Data synchronizována z cloudu');
+            setTimeout(() => setSuccessMessage(null), 5000);
+          }
+        } else if (showSuccessMessage) {
           if (data.lastModified === lastModified) {
             setSuccessMessage('Data jsou aktuální - stejná verze jako v cloudu');
             setTimeout(() => setSuccessMessage(null), 5000);
