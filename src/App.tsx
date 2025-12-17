@@ -39,16 +39,28 @@ function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const initialSyncDone = useRef<boolean>(false);
   const firebaseConfigured = isFirebaseConfigured();
-  const lastSavedFreezerData = useRef<FreezerData>(freezerData);
-  const lastSavedTemplates = useRef<ItemTemplate[]>(templates);
 
-  // Ukládání do localStorage pouze při potvrzení změn nebo načtení z Firebase
-  const saveToLocalStorage = (data: FreezerData, temps: ItemTemplate[]) => {
-    saveFreezerData(data);
-    saveItemTemplates(temps);
-    lastSavedFreezerData.current = data;
-    lastSavedTemplates.current = temps;
-  };
+  // Automatické ukládání do localStorage
+  useEffect(() => {
+    saveFreezerData(freezerData);
+  }, [freezerData]);
+
+  useEffect(() => {
+    saveItemTemplates(templates);
+  }, [templates]);
+
+  // Warning při pokusu o reload/zavření s neuloženými změnami
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges]);
 
   useEffect(() => {
     localStorage.setItem('mrazaky-lastModified', lastModified.toString());
@@ -133,7 +145,8 @@ function App() {
         setFreezerData(data.freezerData);
         setTemplates(data.templates);
         setLastModified(data.lastModified);
-        saveToLocalStorage(data.freezerData, data.templates);
+        saveFreezerData(data.freezerData);
+        saveItemTemplates(data.templates);
         console.log('✅ Data úspěšně načtena z cloudu');
         if (showSuccessMessage) {
           setSuccessMessage('Nová data byla načtena z cloudu');
@@ -203,9 +216,6 @@ function App() {
     console.log('🚀 handleConfirmSync zavoláno');
     setShowSyncConfirm(false);
     setIsUploading(true);
-    
-    // Uložit změny do localStorage před odesláním do Firebase
-    saveToLocalStorage(freezerData, templates);
     
     if (!syncCode || !firebaseConfigured) {
       console.error('❌ Sync nelze provést:', { syncCode, firebaseConfigured });
@@ -809,14 +819,7 @@ function App() {
           <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
             <button
               className="sync-toast-cancel"
-              onClick={() => {
-                // Vrátit neuložené změny
-                setFreezerData(lastSavedFreezerData.current);
-                setTemplates(lastSavedTemplates.current);
-                setShowSyncConfirm(false);
-                setHasUnsavedChanges(false);
-                setChangeCount(0);
-              }}
+              onClick={() => setShowSyncConfirm(false)}
               style={{
                 padding: '10px 20px',
                 fontSize: '14px',
