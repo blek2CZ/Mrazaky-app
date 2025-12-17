@@ -39,6 +39,10 @@ function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const initialSyncDone = useRef<boolean>(false);
   const firebaseConfigured = isFirebaseConfigured();
+  const lastSyncedData = useRef<{ freezerData: FreezerData; templates: ItemTemplate[] }>({ 
+    freezerData: loadFreezerData(), 
+    templates: loadItemTemplates() 
+  });
 
   // Automatické ukládání do localStorage
   useEffect(() => {
@@ -61,6 +65,17 @@ function App() {
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [hasUnsavedChanges]);
+
+  // Funkce pro zahození neuložených změn
+  const handleDiscardChanges = () => {
+    setFreezerData(lastSyncedData.current.freezerData);
+    setTemplates(lastSyncedData.current.templates);
+    saveFreezerData(lastSyncedData.current.freezerData);
+    saveItemTemplates(lastSyncedData.current.templates);
+    setShowSyncConfirm(false);
+    setHasUnsavedChanges(false);
+    setChangeCount(0);
+  };
 
   useEffect(() => {
     localStorage.setItem('mrazaky-lastModified', lastModified.toString());
@@ -147,6 +162,8 @@ function App() {
         setLastModified(data.lastModified);
         saveFreezerData(data.freezerData);
         saveItemTemplates(data.templates);
+        // Uložit jako poslední synchronizovaná data
+        lastSyncedData.current = { freezerData: data.freezerData, templates: data.templates };
         console.log('✅ Data úspěšně načtena z cloudu');
         if (showSuccessMessage) {
           setSuccessMessage('Nová data byla načtena z cloudu');
@@ -266,6 +283,8 @@ function App() {
         setLastModified(result.serverTimestamp);
         setHasUnsavedChanges(false);
         setChangeCount(0);
+        // Uložit aktuální stav jako poslední synchronizovaný
+        lastSyncedData.current = { freezerData, templates };
         setSuccessMessage('Změny byly úspěšně odeslány do cloudu');
         setTimeout(() => setSuccessMessage(null), 5000);
         setIsUploading(false);
@@ -816,29 +835,46 @@ function App() {
           <div className="sync-toast-message" style={{ marginBottom: '20px', color: '#666' }}>
             Chcete je odeslat do cloudu?
           </div>
-          <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+          <div style={{ display: 'flex', gap: '10px', justifyContent: 'space-between' }}>
             <button
-              className="sync-toast-cancel"
-              onClick={() => setShowSyncConfirm(false)}
+              className="sync-toast-discard"
+              onClick={handleDiscardChanges}
               style={{
                 padding: '10px 20px',
                 fontSize: '14px',
-                backgroundColor: '#f5f5f5',
-                border: '1px solid #ddd',
+                backgroundColor: '#ff5252',
+                color: 'white',
+                border: 'none',
                 borderRadius: '6px',
                 cursor: 'pointer',
                 fontWeight: '500'
               }}
             >
-              Pokračovat v úpravách
+              🗑️ Zahodit změny
             </button>
-            <button
-              className="sync-toast-confirm"
-              onClick={handleConfirmSync}
-              style={{
-                padding: '10px 20px',
-                fontSize: '14px',
-                backgroundColor: '#4CAF50',
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                className="sync-toast-cancel"
+                onClick={() => setShowSyncConfirm(false)}
+                style={{
+                  padding: '10px 20px',
+                  fontSize: '14px',
+                  backgroundColor: '#f5f5f5',
+                  border: '1px solid #ddd',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontWeight: '500'
+                }}
+              >
+                Pokračovat v úpravách
+              </button>
+              <button
+                className="sync-toast-confirm"
+                onClick={handleConfirmSync}
+                style={{
+                  padding: '10px 20px',
+                  fontSize: '14px',
+                  backgroundColor: '#4CAF50',
                 color: 'white',
                 border: 'none',
                 borderRadius: '6px',
@@ -848,6 +884,7 @@ function App() {
             >
               ☁️ Odeslat hned
             </button>
+            </div>
           </div>
         </div>
       )}

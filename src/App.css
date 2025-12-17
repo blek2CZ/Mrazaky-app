@@ -277,4 +277,9 @@
     background-color: #4CAF50 !important;
     color: white !important;
   }
+  
+  .sync-toast-discard {
+    background-color: #ff5252 !important;
+    color: white !important;
+  }
 }
