@@ -282,4 +282,19 @@
     background-color: #ff5252 !important;
     color: white !important;
   }
+  
+  /* Tlačítka pod sebou na mobilu */
+  .sync-toast > div:last-child {
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+  
+  .sync-toast > div:last-child > div {
+    width: 100% !important;
+    flex-direction: column !important;
+  }
+  
+  .sync-toast button {
+    width: 100% !important;
+  }
 }
