@@ -172,18 +172,23 @@ function App() {
       } else {
         console.log('✅ Lokální timestamp je stejný nebo novější než server');
         
-        // Porovnej skutečná data, ne jen timestamp (pouze při manuální kontrole)
-        const dataAreSame = JSON.stringify(data.freezerData) === JSON.stringify(freezerData) &&
-                            JSON.stringify(data.templates) === JSON.stringify(templates);
+        // Porovnej data z cloudu s posledním synchronizovaným stavem
+        const cloudMatchesLastSynced = JSON.stringify(data.freezerData) === JSON.stringify(lastSyncedData.current.freezerData) &&
+                                        JSON.stringify(data.templates) === JSON.stringify(lastSyncedData.current.templates);
         
-        // Aktualizovat lastSyncedData pokud jsou data stejná (vždy, nejen při manuální kontrole)
-        if (dataAreSame && data.lastModified === lastModified) {
+        // Porovnej aktuální lokální data s daty z cloudu
+        const localMatchesCloud = JSON.stringify(data.freezerData) === JSON.stringify(freezerData) &&
+                                  JSON.stringify(data.templates) === JSON.stringify(templates);
+        
+        // Pokud cloud odpovídá aktuálnímu stavu, aktualizuj lastSyncedData
+        if (localMatchesCloud && data.lastModified === lastModified) {
           lastSyncedData.current = { freezerData, templates };
           console.log('✅ Data jsou synchronizovaná, lastSyncedData aktualizován');
         }
         
         // Detekce desynchronizace pouze při manuální kontrole
-        if (!dataAreSame && data.lastModified === lastModified && isManualCheck) {
+        // Desynchronizace = cloud se liší od posledního syncu I od aktuálního stavu
+        if (!cloudMatchesLastSynced && !localMatchesCloud && data.lastModified === lastModified && isManualCheck) {
           console.warn('⚠️ DESYNCHRONIZACE: Stejný timestamp, ale jiná data!');
           const action = window.confirm(
             '⚠️ Detekována desynchronizace dat!\n\n' +
