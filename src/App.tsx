@@ -172,6 +172,12 @@ function App() {
       } else {
         console.log('✅ Lokální timestamp je stejný nebo novější než server');
         
+        // Když je timestamp stejný, cloud je referenční bod - vždy aktualizuj lastSyncedData
+        if (data.lastModified === lastModified) {
+          lastSyncedData.current = { freezerData: data.freezerData, templates: data.templates };
+          console.log('✅ Timestamp stejný - lastSyncedData nastaven na data z cloudu');
+        }
+        
         // Porovnej data z cloudu s posledním synchronizovaným stavem
         const cloudMatchesLastSynced = JSON.stringify(data.freezerData) === JSON.stringify(lastSyncedData.current.freezerData) &&
                                         JSON.stringify(data.templates) === JSON.stringify(lastSyncedData.current.templates);
@@ -179,12 +185,6 @@ function App() {
         // Porovnej aktuální lokální data s daty z cloudu
         const localMatchesCloud = JSON.stringify(data.freezerData) === JSON.stringify(freezerData) &&
                                   JSON.stringify(data.templates) === JSON.stringify(templates);
-        
-        // Pokud cloud odpovídá aktuálnímu stavu, aktualizuj lastSyncedData
-        if (localMatchesCloud && data.lastModified === lastModified) {
-          lastSyncedData.current = { freezerData, templates };
-          console.log('✅ Data jsou synchronizovaná, lastSyncedData aktualizován');
-        }
         
         // Detekce desynchronizace pouze při manuální kontrole
         // Desynchronizace = cloud se liší od posledního syncu I od aktuálního stavu
