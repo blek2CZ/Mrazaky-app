@@ -82,7 +82,7 @@ function App() {
   }, [lastModified]);
 
   // Funkce pro kontrolu a načtení dat z Firebase
-  const checkForUpdates = async (showSuccessMessage: boolean = false) => {
+  const checkForUpdates = async (showSuccessMessage: boolean = false, isManualCheck: boolean = false) => {
     if (!syncCode || !firebaseConfigured) {
       setErrorMessage('Synchronizace není k dispozici.');
       setTimeout(() => setErrorMessage(null), 10000);
@@ -172,12 +172,12 @@ function App() {
       } else {
         console.log('✅ Lokální timestamp je stejný nebo novější než server');
         
-        // Porovnej skutečná data, ne jen timestamp (ale ne při prvním spuštění)
+        // Porovnej skutečná data, ne jen timestamp (pouze při manuální kontrole)
         const dataAreSame = JSON.stringify(data.freezerData) === JSON.stringify(freezerData) &&
                             JSON.stringify(data.templates) === JSON.stringify(templates);
         
-        // Detekce desynchronizace pouze pokud už proběhla alespoň jedna synchronizace
-        if (!dataAreSame && data.lastModified === lastModified && initialSyncDone.current) {
+        // Detekce desynchronizace pouze při manuální kontrole
+        if (!dataAreSame && data.lastModified === lastModified && isManualCheck) {
           console.warn('⚠️ DESYNCHRONIZACE: Stejný timestamp, ale jiná data!');
           const action = window.confirm(
             '⚠️ Detekována desynchronizace dat!\n\n' +
@@ -253,7 +253,7 @@ function App() {
   useEffect(() => {
     if (syncCode && firebaseConfigured) {
       console.log('🚀 Aplikace spuštěna - načítám data z cloudu...');
-      checkForUpdates(false); // false = nezobrazovat success hlášku při startu
+      checkForUpdates(false, false); // false = nezobrazovat success hlášku, false = není manuální kontrola
     } else if (syncCode && !firebaseConfigured) {
       console.error('❌ Firebase není nakonfigurován');
       setErrorMessage('Firebase databáze není dostupná. Aplikace funguje pouze offline.');
@@ -964,7 +964,7 @@ function App() {
             </button>
           )}
           <button
-            onClick={() => checkForUpdates(true)}
+            onClick={() => checkForUpdates(true, true)}
             disabled={isCheckingForUpdates}
             style={{
               padding: '12px 20px',
