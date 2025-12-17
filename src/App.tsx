@@ -39,14 +39,16 @@ function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const initialSyncDone = useRef<boolean>(false);
   const firebaseConfigured = isFirebaseConfigured();
+  const lastSavedFreezerData = useRef<FreezerData>(freezerData);
+  const lastSavedTemplates = useRef<ItemTemplate[]>(templates);
 
-  useEffect(() => {
-    saveFreezerData(freezerData);
-  }, [freezerData]);
-
-  useEffect(() => {
-    saveItemTemplates(templates);
-  }, [templates]);
+  // Ukládání do localStorage pouze při potvrzení změn nebo načtení z Firebase
+  const saveToLocalStorage = (data: FreezerData, temps: ItemTemplate[]) => {
+    saveFreezerData(data);
+    saveItemTemplates(temps);
+    lastSavedFreezerData.current = data;
+    lastSavedTemplates.current = temps;
+  };
 
   useEffect(() => {
     localStorage.setItem('mrazaky-lastModified', lastModified.toString());
@@ -131,8 +133,7 @@ function App() {
         setFreezerData(data.freezerData);
         setTemplates(data.templates);
         setLastModified(data.lastModified);
-        saveFreezerData(data.freezerData);
-        saveItemTemplates(data.templates);
+        saveToLocalStorage(data.freezerData, data.templates);
         console.log('✅ Data úspěšně načtena z cloudu');
         if (showSuccessMessage) {
           setSuccessMessage('Nová data byla načtena z cloudu');
@@ -202,6 +203,9 @@ function App() {
     console.log('🚀 handleConfirmSync zavoláno');
     setShowSyncConfirm(false);
     setIsUploading(true);
+    
+    // Uložit změny do localStorage před odesláním do Firebase
+    saveToLocalStorage(freezerData, templates);
     
     if (!syncCode || !firebaseConfigured) {
       console.error('❌ Sync nelze provést:', { syncCode, firebaseConfigured });
@@ -332,7 +336,6 @@ function App() {
         [drawerId]: [...(freezerData[freezerType][drawerId] || []), item],
       },
     };
-    saveFreezerData(newFreezerData);
     setFreezerData(newFreezerData);
     setHasUnsavedChanges(true);
     setChangeCount(prev => prev + 1);
@@ -365,7 +368,6 @@ function App() {
       },
     };
     
-    saveFreezerData(newFreezerData);
     setFreezerData(newFreezerData);
     setHasUnsavedChanges(true);
     setChangeCount(prev => prev + 1);
@@ -381,7 +383,6 @@ function App() {
       },
     };
     
-    saveFreezerData(newFreezerData);
     setFreezerData(newFreezerData);
     setHasUnsavedChanges(true);
     setChangeCount(prev => prev + 1);
@@ -529,13 +530,11 @@ function App() {
     }
     console.log('✓ Kontrola: Celkový počet položek zachován');
 
-    // KROK 10: Ulož do localStorage
-    console.log('💾 Ukládání do localStorage...');
-    saveFreezerData(newFreezerData);
+    // KROK 10: Nastav nová data (uloží se až při potvrzení)
+    console.log('✓ Nastavuji nová data...');
     setFreezerData(newFreezerData);
     setHasUnsavedChanges(true);
     setChangeCount(prev => prev + 1);
-    console.log('✓ Uloženo do localStorage');
     console.log('=== PŘESUN POLOŽKY - DOKONČENO ✓ ===');
   };
 
@@ -810,7 +809,14 @@ function App() {
           <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
             <button
               className="sync-toast-cancel"
-              onClick={() => setShowSyncConfirm(false)}
+              onClick={() => {
+                // Vrátit neuložené změny
+                setFreezerData(lastSavedFreezerData.current);
+                setTemplates(lastSavedTemplates.current);
+                setShowSyncConfirm(false);
+                setHasUnsavedChanges(false);
+                setChangeCount(0);
+              }}
               style={{
                 padding: '10px 20px',
                 fontSize: '14px',
