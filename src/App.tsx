@@ -188,6 +188,14 @@ function App() {
         
         // Detekce desynchronizace pouze při manuální kontrole
         // Desynchronizace = cloud se liší od posledního syncu I od aktuálního stavu
+        if (isManualCheck) {
+          console.log('🔍 Kontrola desynchronizace:', {
+            cloudMatchesLastSynced,
+            localMatchesCloud,
+            sameTimestamp: data.lastModified === lastModified
+          });
+        }
+        
         if (!cloudMatchesLastSynced && !localMatchesCloud && data.lastModified === lastModified && isManualCheck) {
           console.warn('⚠️ DESYNCHRONIZACE: Stejný timestamp, ale jiná data!');
           const action = window.confirm(
