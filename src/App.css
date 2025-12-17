@@ -242,4 +242,33 @@
   .search-section .item:last-child {
     border-bottom: none;
   }
+  
+  /* Toast pro mobil - tmavé téma */
+  .sync-toast {
+    background-color: #2a2a2a !important;
+    border: 1px solid #444 !important;
+  }
+  
+  .sync-toast-title {
+    color: #fff !important;
+  }
+  
+  .sync-toast-title strong {
+    color: #61dafb !important;
+  }
+  
+  .sync-toast-message {
+    color: #ccc !important;
+  }
+  
+  .sync-toast-cancel {
+    background-color: #3a3a3a !important;
+    border: 1px solid #555 !important;
+    color: #fff !important;
+  }
+  
+  .sync-toast-confirm {
+    background-color: #4CAF50 !important;
+    color: white !important;
+  }
 }

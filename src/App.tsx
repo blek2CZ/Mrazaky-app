@@ -787,7 +787,7 @@ function App() {
       )}
 
       {showSyncConfirm && (
-        <div style={{
+        <div className="sync-toast" style={{
           position: 'fixed',
           bottom: '20px',
           left: '50%',
@@ -801,14 +801,15 @@ function App() {
           maxWidth: '500px',
           animation: 'slideUp 0.3s ease-out'
         }}>
-          <div style={{ marginBottom: '15px', fontSize: '16px', fontWeight: '500' }}>
+          <div className="sync-toast-title" style={{ marginBottom: '15px', fontSize: '16px', fontWeight: '500' }}>
             📊 Máte <strong>{changeCount}</strong> {changeCount === 1 ? 'neuloženou změnu' : changeCount >= 2 && changeCount <= 4 ? 'neuložené změny' : 'neuložených změn'}
           </div>
-          <div style={{ marginBottom: '20px', color: '#666' }}>
+          <div className="sync-toast-message" style={{ marginBottom: '20px', color: '#666' }}>
             Chcete je odeslat do cloudu?
           </div>
           <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
             <button
+              className="sync-toast-cancel"
               onClick={() => setShowSyncConfirm(false)}
               style={{
                 padding: '10px 20px',
@@ -823,6 +824,7 @@ function App() {
               Pokračovat v úpravách
             </button>
             <button
+              className="sync-toast-confirm"
               onClick={handleConfirmSync}
               style={{
                 padding: '10px 20px',
