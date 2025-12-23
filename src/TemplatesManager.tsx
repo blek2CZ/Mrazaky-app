@@ -130,7 +130,8 @@ export default function TemplatesManager({ templates, onAddTemplate, onEditTempl
                     disabled={!isMobile() && isTemplateUsed(template.name)}
                     title={isTemplateUsed(template.name) ? 'Položka je použita v mrazácích' : 'Smazat'}
                     style={isMobile() && isTemplateUsed(template.name) ? { 
-                      color: '#ff5252',
+                      backgroundColor: '#ff5252',
+                      borderColor: '#ff5252',
                       opacity: '1',
                       cursor: 'pointer'
                     } : undefined}
