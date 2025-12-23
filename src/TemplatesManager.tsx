@@ -17,6 +17,9 @@ export default function TemplatesManager({ templates, onAddTemplate, onEditTempl
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
+  const [showMobileWarning, setShowMobileWarning] = useState(false);
+  
+  const isMobile = () => window.innerWidth <= 768;
 
   const handleAdd = () => {
     const trimmedName = newTemplateName.trim();
@@ -116,9 +119,17 @@ export default function TemplatesManager({ templates, onAddTemplate, onEditTempl
                     ✏️
                   </button>
                   <button
-                    onClick={() => onDeleteTemplate(template.id)}
-                    disabled={isTemplateUsed(template.name)}
+                    onClick={() => {
+                      if (isTemplateUsed(template.name) && isMobile()) {
+                        setShowMobileWarning(true);
+                        setTimeout(() => setShowMobileWarning(false), 3000);
+                      } else if (!isTemplateUsed(template.name)) {
+                        onDeleteTemplate(template.id);
+                      }
+                    }}
+                    disabled={!isMobile() && isTemplateUsed(template.name)}
                     title={isTemplateUsed(template.name) ? 'Položka je použita v mrazácích' : 'Smazat'}
+                    style={isMobile() && isTemplateUsed(template.name) ? { color: '#ff5252' } : undefined}
                   >
                     🗑️
                   </button>
@@ -143,6 +154,27 @@ export default function TemplatesManager({ templates, onAddTemplate, onEditTempl
               />
               <button onClick={handleAdd}>Přidat</button>
               <button onClick={() => { setShowAddForm(false); setNewTemplateName(''); }}>Zrušit</button>
+            </div>
+          )}
+          
+          {showMobileWarning && (
+            <div style={{
+              position: 'fixed',
+              bottom: '20px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              backgroundColor: '#ff5252',
+              color: 'white',
+              padding: '15px 25px',
+              borderRadius: '8px',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+              zIndex: 10000,
+              fontSize: '14px',
+              fontWeight: '500',
+              maxWidth: '90vw',
+              textAlign: 'center'
+            }}>
+              ⚠️ Položka je použita v mrazácích
             </div>
           )}
         </>
