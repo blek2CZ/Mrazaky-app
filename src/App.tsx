@@ -13,6 +13,26 @@ import { getSyncCode, saveSyncCode, clearSyncCode, syncDataToFirebase, syncDataT
 import { verifyPasswordHash } from './adminAuth';
 import './App.css';
 
+// Funkce pro načtení posledního synchronizovaného stavu
+const loadLastSyncedData = (): { freezerData: FreezerData; templates: ItemTemplate[] } => {
+  const stored = localStorage.getItem('mrazaky-lastSyncedData');
+  if (stored) {
+    try {
+      return JSON.parse(stored);
+    } catch {
+      // Pokud není platný JSON, vrať aktuální data
+      return { freezerData: loadFreezerData(), templates: loadItemTemplates() };
+    }
+  }
+  // Při prvním spuštění vrať aktuální data
+  return { freezerData: loadFreezerData(), templates: loadItemTemplates() };
+};
+
+// Funkce pro uložení posledního synchronizovaného stavu
+const saveLastSyncedData = (data: { freezerData: FreezerData; templates: ItemTemplate[] }) => {
+  localStorage.setItem('mrazaky-lastSyncedData', JSON.stringify(data));
+};
+
 function App() {
   const [freezerData, setFreezerData] = useState<FreezerData>(loadFreezerData);
   const [templates, setTemplates] = useState<ItemTemplate[]>(loadItemTemplates);
@@ -28,7 +48,6 @@ function App() {
   const [isUploading, setIsUploading] = useState(false);
   const [openSection, setOpenSection] = useState<string | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [changeCount, setChangeCount] = useState(0);
   const [showConflictResolution, setShowConflictResolution] = useState(false);
   const [conflictServerData, setConflictServerData] = useState<{ freezerData: FreezerData; templates: ItemTemplate[]; lastModified: number } | null>(null);
   const [lastModified, setLastModified] = useState<number>(() => {
@@ -37,12 +56,13 @@ function App() {
   });
   const [showSyncActions, setShowSyncActions] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<{ freezerType: 'small' | 'large' | 'smallMama'; drawerId: number; itemId: string; itemName: string; itemQuantity: number } | null>(null);
+  const [showDeleteTemplateConfirm, setShowDeleteTemplateConfirm] = useState(false);
+  const [templateToDelete, setTemplateToDelete] = useState<{ id: string; name: string } | null>(null);
   const initialSyncDone = useRef<boolean>(false);
   const firebaseConfigured = isFirebaseConfigured();
-  const lastSyncedData = useRef<{ freezerData: FreezerData; templates: ItemTemplate[] }>({ 
-    freezerData: loadFreezerData(), 
-    templates: loadItemTemplates() 
-  });
+  const lastSyncedData = useRef<{ freezerData: FreezerData; templates: ItemTemplate[] }>(loadLastSyncedData());
 
   // Automatické ukládání do localStorage
   useEffect(() => {
@@ -52,6 +72,51 @@ function App() {
   useEffect(() => {
     saveItemTemplates(templates);
   }, [templates]);
+
+  // Funkce pro hluboké porovnání dat s normalizací
+  const areDataEqual = (data1: FreezerData, data2: FreezerData, templates1: ItemTemplate[], templates2: ItemTemplate[]): boolean => {
+    // Jednoduchá normalizace - stringify s replacer pro seřazení klíčů
+    const normalize = (obj: any): string => {
+      return JSON.stringify(obj, (_key, value) => {
+        if (value && typeof value === 'object' && !Array.isArray(value)) {
+          // Seřadit klíče objektu
+          return Object.keys(value).sort().reduce((sorted: any, key) => {
+            sorted[key] = value[key];
+            return sorted;
+          }, {});
+        }
+        return value;
+      });
+    };
+    
+    const data1Str = normalize(data1);
+    const data2Str = normalize(data2);
+    const templates1Str = normalize(templates1);
+    const templates2Str = normalize(templates2);
+    
+    const dataEqual = data1Str === data2Str;
+    const templatesEqual = templates1Str === templates2Str;
+    
+    return dataEqual && templatesEqual;
+  };
+
+  // Detekce změn oproti poslednímu synchronizovanému stavu
+  useEffect(() => {
+    const hasChanges = !areDataEqual(freezerData, lastSyncedData.current.freezerData, templates, lastSyncedData.current.templates);
+    setHasUnsavedChanges(hasChanges);
+  }, [freezerData, templates]);
+
+  // Při prvním načtení synchronizovat lastSyncedData s aktuálními daty, pokud neexistuje mrazaky-lastSyncedData
+  useEffect(() => {
+    const stored = localStorage.getItem('mrazaky-lastSyncedData');
+    if (!stored) {
+      // Při prvním spuštění nastavit lastSyncedData na aktuální stav
+      const currentData = { freezerData, templates };
+      lastSyncedData.current = currentData;
+      saveLastSyncedData(currentData);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Spustit pouze při mount s aktuálními hodnotami freezerData a templates
 
   // Warning při pokusu o reload/zavření s neuloženými změnami
   useEffect(() => {
@@ -73,8 +138,7 @@ function App() {
     saveFreezerData(lastSyncedData.current.freezerData);
     saveItemTemplates(lastSyncedData.current.templates);
     setShowSyncConfirm(false);
-    setHasUnsavedChanges(false);
-    setChangeCount(0);
+    // hasUnsavedChanges se automaticky nastaví na false díky useEffect
   };
 
   useEffect(() => {
@@ -153,8 +217,7 @@ function App() {
             setIsCheckingForUpdates(false);
             return; // Ponechat lokální data
           }
-          setHasUnsavedChanges(false);
-          setChangeCount(0);
+          // hasUnsavedChanges se automaticky nastaví na false díky useEffect
         }
 
         setFreezerData(data.freezerData);
@@ -164,6 +227,7 @@ function App() {
         saveItemTemplates(data.templates);
         // Uložit jako poslední synchronizovaná data
         lastSyncedData.current = { freezerData: data.freezerData, templates: data.templates };
+        saveLastSyncedData(lastSyncedData.current);
         console.log('✅ Data úspěšně načtena z cloudu');
         if (showSuccessMessage) {
           setSuccessMessage('Nová data byla načtena z cloudu');
@@ -175,6 +239,7 @@ function App() {
         // Když je timestamp stejný, cloud je referenční bod - vždy aktualizuj lastSyncedData
         if (data.lastModified === lastModified) {
           lastSyncedData.current = { freezerData: data.freezerData, templates: data.templates };
+          saveLastSyncedData(lastSyncedData.current);
           console.log('✅ Timestamp stejný - lastSyncedData nastaven na data z cloudu');
         }
         
@@ -211,15 +276,12 @@ function App() {
             saveFreezerData(data.freezerData);
             saveItemTemplates(data.templates);
             lastSyncedData.current = { freezerData: data.freezerData, templates: data.templates };
-            setHasUnsavedChanges(false);
-            setChangeCount(0);
+            saveLastSyncedData(lastSyncedData.current);
             initialSyncDone.current = true;
             setSuccessMessage('Data synchronizována z cloudu');
             setTimeout(() => setSuccessMessage(null), 5000);
           } else {
-            // Ponechat lokální data a označit jako neuložené změny
-            setHasUnsavedChanges(true);
-            setChangeCount(1);
+            // Ponechat lokální data - hasUnsavedChanges se automaticky nastaví díky useEffect
             setShowSyncConfirm(true);
             setSuccessMessage('Lokální data ponechána - můžete je odeslat nebo zahodit');
             setTimeout(() => setSuccessMessage(null), 5000);
@@ -229,12 +291,8 @@ function App() {
             setSuccessMessage('Data jsou aktuální - stejná verze jako v cloudu');
             setTimeout(() => setSuccessMessage(null), 5000);
           } else {
-            // Lokální data jsou novější - nastavit jako neuložené změny
-            console.log('⚠️ Lokální data jsou novější - nastavuji hasUnsavedChanges');
-            setHasUnsavedChanges(true);
-            if (changeCount === 0) {
-              setChangeCount(1); // Nastavit alespoň 1 změnu aby se zobrazilo tlačítko
-            }
+            // Lokální data jsou novější - hasUnsavedChanges se automaticky nastaví díky useEffect
+            console.log('⚠️ Lokální data jsou novější');
             setSuccessMessage('Lokální data jsou novější než v cloudu - použijte tlačítko pro odeslání');
             setTimeout(() => setSuccessMessage(null), 6000);
           }
@@ -334,10 +392,9 @@ function App() {
       if (result.success && result.serverTimestamp) {
         console.log('✅ Úspěch! Data odeslána do cloudu');
         setLastModified(result.serverTimestamp);
-        setHasUnsavedChanges(false);
-        setChangeCount(0);
         // Uložit aktuální stav jako poslední synchronizovaný
         lastSyncedData.current = { freezerData, templates };
+        saveLastSyncedData(lastSyncedData.current);
         setSuccessMessage('Změny byly úspěšně odeslány do cloudu');
         setTimeout(() => setSuccessMessage(null), 5000);
         setIsUploading(false);
@@ -377,8 +434,9 @@ function App() {
       
       if (result.success && result.serverTimestamp) {
         setLastModified(result.serverTimestamp);
-        setHasUnsavedChanges(false);
-        setChangeCount(0);
+        // Aktualizovat lastSyncedData - hasUnsavedChanges se automaticky nastaví díky useEffect
+        lastSyncedData.current = { freezerData, templates };
+        saveLastSyncedData(lastSyncedData.current);
         setSuccessMessage('✅ Vaše data byla odeslána do cloudu (přepsána)');
         setTimeout(() => setSuccessMessage(null), 5000);
       } else {
@@ -402,8 +460,9 @@ function App() {
     setFreezerData(conflictServerData.freezerData);
     setTemplates(conflictServerData.templates);
     setLastModified(conflictServerData.lastModified);
-    setHasUnsavedChanges(false);
-    setChangeCount(0);
+    // Aktualizovat lastSyncedData - hasUnsavedChanges se automaticky nastaví díky useEffect
+    lastSyncedData.current = { freezerData: conflictServerData.freezerData, templates: conflictServerData.templates };
+    saveLastSyncedData(lastSyncedData.current);
     setShowConflictResolution(false);
     setConflictServerData(null);
     setSuccessMessage('✅ Data z cloudu byla načtena');
@@ -419,8 +478,6 @@ function App() {
       },
     };
     setFreezerData(newFreezerData);
-    setHasUnsavedChanges(true);
-    setChangeCount(prev => prev + 1);
 
     // Pokud je to nová položka (custom), přidej do templates
     if (!templates.find(t => t.name === item.name)) {
@@ -451,23 +508,38 @@ function App() {
     };
     
     setFreezerData(newFreezerData);
-    setHasUnsavedChanges(true);
-    setChangeCount(prev => prev + 1);
   };
 
   const handleDeleteItem = async (freezerType: 'small' | 'large' | 'smallMama', drawerId: number, itemId: string) => {
+    // Najít název položky pro potvrzovací dialog
+    const item = freezerData[freezerType][drawerId].find(item => item.id === itemId);
+    if (!item) return;
+    
+    // Zobrazit toast s potvrzením
+    setItemToDelete({
+      freezerType,
+      drawerId,
+      itemId,
+      itemName: item.name,
+      itemQuantity: item.quantity
+    });
+    setShowDeleteConfirm(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (!itemToDelete) return;
 
     const newFreezerData = {
       ...freezerData,
-      [freezerType]: {
-        ...freezerData[freezerType],
-        [drawerId]: freezerData[freezerType][drawerId].filter(item => item.id !== itemId),
+      [itemToDelete.freezerType]: {
+        ...freezerData[itemToDelete.freezerType],
+        [itemToDelete.drawerId]: freezerData[itemToDelete.freezerType][itemToDelete.drawerId].filter(item => item.id !== itemToDelete.itemId),
       },
     };
     
     setFreezerData(newFreezerData);
-    setHasUnsavedChanges(true);
-    setChangeCount(prev => prev + 1);
+    setShowDeleteConfirm(false);
+    setItemToDelete(null);
   };
 
   const handleAddTemplate = (name: string) => {
@@ -479,6 +551,38 @@ function App() {
   };
 
   const handleEditTemplate = (id: string, newName: string) => {
+    // Najdi starý název šablony
+    const oldTemplate = templates.find(t => t.id === id);
+    if (!oldTemplate) return;
+    
+    const oldName = oldTemplate.name;
+    if (oldName === newName) return;
+    
+    // Aktualizuj všechny položky se starým názvem ve všech šuplících
+    const newFreezerData: FreezerData = {
+      small: Object.fromEntries(
+        Object.entries(freezerData.small).map(([drawerId, items]) => [
+          drawerId,
+          items.map((item: Item) => item.name === oldName ? { ...item, name: newName } : item)
+        ])
+      ) as { [drawerId: number]: Item[] },
+      large: Object.fromEntries(
+        Object.entries(freezerData.large).map(([drawerId, items]) => [
+          drawerId,
+          items.map((item: Item) => item.name === oldName ? { ...item, name: newName } : item)
+        ])
+      ) as { [drawerId: number]: Item[] },
+      smallMama: Object.fromEntries(
+        Object.entries(freezerData.smallMama).map(([drawerId, items]) => [
+          drawerId,
+          items.map((item: Item) => item.name === oldName ? { ...item, name: newName } : item)
+        ])
+      ) as { [drawerId: number]: Item[] }
+    };
+    
+    setFreezerData(newFreezerData);
+    
+    // Aktualizuj šablonu
     setTemplates(prev => prev.map(t => t.id === id ? { ...t, name: newName } : t));
   };
 
@@ -508,8 +612,6 @@ function App() {
     };
     
     setFreezerData(newFreezerData);
-    setHasUnsavedChanges(true);
-    setChangeCount(prev => prev + 1);
     
     // Aktualizuj template se stejným názvem
     setTemplates(prev => prev.map(t => t.name === oldName ? { ...t, name: newName } : t));
@@ -615,13 +717,24 @@ function App() {
     // KROK 10: Nastav nová data (uloží se až při potvrzení)
     console.log('✓ Nastavuji nová data...');
     setFreezerData(newFreezerData);
-    setHasUnsavedChanges(true);
-    setChangeCount(prev => prev + 1);
     console.log('=== PŘESUN POLOŽKY - DOKONČENO ✓ ===');
   };
 
   const handleDeleteTemplate = (id: string) => {
-    setTemplates(prev => prev.filter(t => t.id !== id));
+    const template = templates.find(t => t.id === id);
+    if (!template) return;
+    
+    // Zobrazit toast s potvrzením
+    setTemplateToDelete({ id, name: template.name });
+    setShowDeleteTemplateConfirm(true);
+  };
+
+  const handleConfirmDeleteTemplate = () => {
+    if (!templateToDelete) return;
+
+    setTemplates(prev => prev.filter(t => t.id !== templateToDelete.id));
+    setShowDeleteTemplateConfirm(false);
+    setTemplateToDelete(null);
   };
 
   const isTemplateUsed = (name: string): boolean => {
@@ -883,7 +996,7 @@ function App() {
           animation: 'slideUp 0.3s ease-out'
         }}>
           <div className="sync-toast-title" style={{ marginBottom: '15px', fontSize: '16px', fontWeight: '500' }}>
-            📊 Máte <strong>{changeCount}</strong> {changeCount === 1 ? 'neuloženou změnu' : changeCount >= 2 && changeCount <= 4 ? 'neuložené změny' : 'neuložených změn'}
+            📊 Máte <strong>neuložené změny</strong>
           </div>
           <div className="sync-toast-message" style={{ marginBottom: '20px', color: '#666' }}>
             Chcete je odeslat do cloudu?
@@ -942,6 +1055,124 @@ function App() {
         </div>
       )}
 
+      {showDeleteConfirm && itemToDelete && (
+        <div className="sync-toast" style={{
+          position: 'fixed',
+          bottom: '20px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 1001,
+          backgroundColor: 'white',
+          padding: '20px 30px',
+          borderRadius: '12px',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+          minWidth: '300px',
+          maxWidth: '500px',
+          animation: 'slideUp 0.3s ease-out'
+        }}>
+          <div className="sync-toast-title" style={{ marginBottom: '15px', fontSize: '16px', fontWeight: '500' }}>
+            🗑️ Smazat položku?
+          </div>
+          <div className="sync-toast-message" style={{ marginBottom: '20px', color: '#666' }}>
+            <strong>{itemToDelete.itemName}</strong> ({itemToDelete.itemQuantity} ks)
+          </div>
+          <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+            <button
+              className="sync-toast-cancel"
+              onClick={() => {
+                setShowDeleteConfirm(false);
+                setItemToDelete(null);
+              }}
+              style={{
+                padding: '10px 20px',
+                fontSize: '14px',
+                backgroundColor: '#f5f5f5',
+                border: '1px solid #ddd',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontWeight: '500'
+              }}
+            >
+              Zrušit
+            </button>
+            <button
+              className="sync-toast-discard"
+              onClick={handleConfirmDelete}
+              style={{
+                padding: '10px 20px',
+                fontSize: '14px',
+                backgroundColor: '#ff5252',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontWeight: '500'
+              }}
+            >
+              Smazat
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Toast pro potvrzení smazání šablony */}
+      {showDeleteTemplateConfirm && templateToDelete && (
+        <div className="sync-toast" style={{
+          position: 'fixed',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          backgroundColor: 'white',
+          padding: '24px',
+          borderRadius: '12px',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+          zIndex: 10000,
+          minWidth: '300px',
+          maxWidth: '90vw'
+        }}>
+          <h3 style={{ marginTop: 0, marginBottom: '15px', color: '#333' }}>Opravdu smazat šablonu?</h3>
+          <div className="sync-toast-message" style={{ marginBottom: '20px', color: '#666' }}>
+            <strong>{templateToDelete.name}</strong>
+          </div>
+          <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+            <button
+              className="sync-toast-cancel"
+              onClick={() => {
+                setShowDeleteTemplateConfirm(false);
+                setTemplateToDelete(null);
+              }}
+              style={{
+                padding: '10px 20px',
+                fontSize: '14px',
+                backgroundColor: '#f5f5f5',
+                border: '1px solid #ddd',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontWeight: '500'
+              }}
+            >
+              Zrušit
+            </button>
+            <button
+              className="sync-toast-discard"
+              onClick={handleConfirmDeleteTemplate}
+              style={{
+                padding: '10px 20px',
+                fontSize: '14px',
+                backgroundColor: '#ff5252',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontWeight: '500'
+              }}
+            >
+              Smazat
+            </button>
+          </div>
+        </div>
+      )}
+
       {isSyncing && (
         <div style={{
           position: 'fixed',
@@ -972,10 +1203,7 @@ function App() {
               }}
             >
               <span style={{ fontSize: '20px' }}>☁️</span>
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                <span>Odeslat změny do cloudu</span>
-                <span style={{ fontSize: '12px', opacity: 0.9 }}>({changeCount} {changeCount === 1 ? 'změna' : changeCount >= 2 && changeCount <= 4 ? 'změny' : 'změn'})</span>
-              </div>
+              <span>Odeslat změny do cloudu</span>
             </button>
           )}
           <button
