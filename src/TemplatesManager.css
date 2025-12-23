@@ -84,6 +84,12 @@
   .add-template-form button {
     width: 100%;
   }
+
+  /* Na mobilu umožnit kliknutí na červený koš */
+  .template-item button:disabled {
+    opacity: 1 !important;
+    cursor: pointer !important;
+  }
 }
 
 .template-item {
