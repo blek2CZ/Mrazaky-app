@@ -395,6 +395,7 @@ function App() {
         // Uložit aktuální stav jako poslední synchronizovaný
         lastSyncedData.current = { freezerData, templates };
         saveLastSyncedData(lastSyncedData.current);
+        setHasUnsavedChanges(false); // Explicitně nastavit false po úspěšném uploadu
         setSuccessMessage('Změny byly úspěšně odeslány do cloudu');
         setTimeout(() => setSuccessMessage(null), 5000);
         setIsUploading(false);
@@ -434,9 +435,10 @@ function App() {
       
       if (result.success && result.serverTimestamp) {
         setLastModified(result.serverTimestamp);
-        // Aktualizovat lastSyncedData - hasUnsavedChanges se automaticky nastaví díky useEffect
+        // Aktualizovat lastSyncedData
         lastSyncedData.current = { freezerData, templates };
         saveLastSyncedData(lastSyncedData.current);
+        setHasUnsavedChanges(false); // Explicitně nastavit false po úspěšném uploadu
         setSuccessMessage('✅ Vaše data byla odeslána do cloudu (přepsána)');
         setTimeout(() => setSuccessMessage(null), 5000);
       } else {
