@@ -996,7 +996,7 @@ function App() {
       )}
 
       {showSyncConfirm && (
-        <div className="sync-toast" style={{
+        <div className="sync-toast" onClick={(e) => e.stopPropagation()} style={{
           position: 'fixed',
           bottom: '20px',
           left: '50%',
@@ -1071,7 +1071,7 @@ function App() {
       )}
 
       {showDeleteConfirm && itemToDelete && (
-        <div className="sync-toast" style={{
+        <div className="sync-toast" onClick={(e) => e.stopPropagation()} style={{
           position: 'fixed',
           bottom: '20px',
           left: '50%',
@@ -1132,7 +1132,7 @@ function App() {
 
       {/* Toast pro potvrzení smazání šablony */}
       {showDeleteTemplateConfirm && templateToDelete && (
-        <div className="sync-toast" style={{
+        <div className="sync-toast" onClick={(e) => e.stopPropagation()} style={{
           position: 'fixed',
           top: '50%',
           left: '50%',
