@@ -730,7 +730,8 @@ function App() {
     const totalItemsAfter = 
       Object.values(newFreezerData.small).flat().length + 
       Object.values(newFreezerData.large).flat().length +
-      Object.values(newFreezerData.smallMama).flat().length;
+      Object.values(newFreezerData.smallMama).flat().length +
+      Object.values(newFreezerData.cellar).flat().length;
     console.log('📊 Celkem položek po změně:', totalItemsAfter);
     
     if (totalItemsBefore !== totalItemsAfter) {
