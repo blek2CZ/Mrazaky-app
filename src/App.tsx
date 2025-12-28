@@ -1363,39 +1363,23 @@ function App() {
                         const hasMultipleLocations = locations.length > 1;
                         
                         return (
-                          <div key={itemName} className="item" style={hasMultipleLocations ? { display: 'flex', flexDirection: 'column', gap: '0.25rem' } : {}}>
+                          <div key={itemName} className="item">
+                            <div className="item-info">
+                              <span className="item-name">{itemName}</span>
+                              <span className="item-quantity">{totalQuantity} ks</span>
+                            </div>
                             {hasMultipleLocations ? (
-                              <>
-                                <div className="item-info">
-                                  <span className="item-name">{itemName}</span>
-                                  <span className="item-quantity">{totalQuantity} ks</span>
-                                </div>
+                              <div style={{ fontSize: '0.9em', color: '#999', marginTop: '0.25rem' }}>
                                 {locations.map((result, idx) => (
-                                  <div key={idx} style={{ 
-                                    display: 'flex', 
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center',
-                                    paddingLeft: '1rem',
-                                    fontSize: '0.9em',
-                                    color: '#ccc'
-                                  }}>
-                                    <span style={{ minWidth: '50px' }}>{result.item.quantity} ks</span>
-                                    <span style={{ flex: 1, paddingLeft: '1rem', textAlign: 'right' }}>
-                                      {result.freezerName} → {result.freezerType === 'cellar' ? 'Police' : 'Šuplík'} {result.drawerNum}
-                                    </span>
+                                  <div key={idx} className="item-location" style={{ paddingLeft: '1rem', marginTop: idx > 0 ? '0.15rem' : '0' }}>
+                                    {result.item.quantity} ks — {result.freezerName} → {result.freezerType === 'cellar' ? 'Police' : 'Šuplík'} {result.drawerNum}
                                   </div>
                                 ))}
-                              </>
+                              </div>
                             ) : (
-                              <>
-                                <div className="item-info">
-                                  <span className="item-name">{itemName}</span>
-                                  <span className="item-quantity">{totalQuantity} ks</span>
-                                </div>
-                                <div className="item-location">
-                                  {locations[0].freezerName} → {locations[0].freezerType === 'cellar' ? 'Police' : 'Šuplík'} {locations[0].drawerNum}
-                                </div>
-                              </>
+                              <div className="item-location">
+                                {locations[0].freezerName} → {locations[0].freezerType === 'cellar' ? 'Police' : 'Šuplík'} {locations[0].drawerNum}
+                              </div>
                             )}
                           </div>
                         );
