@@ -1379,7 +1379,7 @@ function App() {
                               </div>
                             ) : (
                               <div className="item-location">
-                                {locations[0].freezerName} → {locations[0].freezerType === 'cellar' ? 'Police' : 'Šuplík'} {locations[0].drawerNum}
+                                {locations[0].item.quantity} ks — {locations[0].freezerName} → {locations[0].freezerType === 'cellar' ? 'Police' : 'Šuplík'} {locations[0].drawerNum}
                               </div>
                             )}
                           </div>
