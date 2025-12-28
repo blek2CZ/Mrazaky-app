@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Item, ItemTemplate } from './types';
 import './Freezer.css';
 
@@ -328,8 +328,31 @@ interface FreezerProps {
 }
 
 export default function Freezer({ title, drawerCount, freezerType, drawers, allDrawersFromBothFreezers, templates, onAddItem, onUpdateItem, onDeleteItem, onEditItem, onMoveItem, totalDrawers, openDrawerId, onToggleDrawer, isExpanded, onToggle }: FreezerProps) {
+  const freezerRef = useRef<HTMLDivElement>(null);
+
+  // Click outside handler - zavře mrazák když klikneš mimo
+  useEffect(() => {
+    if (!isExpanded) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (freezerRef.current && !freezerRef.current.contains(event.target as Node)) {
+        onToggle(); // Zavře mrazák
+      }
+    };
+
+    // Přidej listener s malým zpožděním aby se nespustil okamžitě po otevření
+    const timeoutId = setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside);
+    }, 100);
+
+    return () => {
+      clearTimeout(timeoutId);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isExpanded, onToggle]);
+
   return (
-    <div className="freezer">
+    <div className="freezer" ref={freezerRef}>
       <div className="freezer-header" onClick={onToggle} style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0' }}>
         <h2 style={{ margin: 0 }}>{title} ({drawerCount} šuplíků)</h2>
         <button type="button" style={{ 
