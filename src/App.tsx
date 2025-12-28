@@ -61,9 +61,20 @@ function App() {
   const [itemToDelete, setItemToDelete] = useState<{ freezerType: 'small' | 'large' | 'smallMama' | 'cellar'; drawerId: number; itemId: string; itemName: string; itemQuantity: number } | null>(null);
   const [showDeleteTemplateConfirm, setShowDeleteTemplateConfirm] = useState(false);
   const [templateToDelete, setTemplateToDelete] = useState<{ id: string; name: string } | null>(null);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const initialSyncDone = useRef<boolean>(false);
   const firebaseConfigured = isFirebaseConfigured();
   const lastSyncedData = useRef<{ freezerData: FreezerData; templates: ItemTemplate[] }>(loadLastSyncedData());
+
+  // Detekce mobilního zařízení při změně velikosti okna
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Automatické ukládání do localStorage
   useEffect(() => {
@@ -1370,7 +1381,7 @@ function App() {
       />
 
 <Freezer
-        title="❄️ Malý mrazák"
+        title={isMobile ? "❄️ Malý mraz." : "❄️ Malý mrazák"}
         drawerCount={3}
         freezerType="small"
         drawers={freezerData.small}
@@ -1399,7 +1410,7 @@ function App() {
       />
 
       <Freezer
-        title="❄️ Velký mrazák"
+        title={isMobile ? "❄️ Velký mraz." : "❄️ Velký mrazák"}
         drawerCount={7}
         freezerType="large"
         drawers={freezerData.large}
