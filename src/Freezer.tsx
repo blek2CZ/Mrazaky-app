@@ -335,7 +335,17 @@ export default function Freezer({ title, drawerCount, freezerType, drawers, allD
     if (!isExpanded) return;
 
     const handleClickOutside = (event: MouseEvent) => {
-      if (freezerRef.current && !freezerRef.current.contains(event.target as Node)) {
+      const target = event.target as HTMLElement;
+      
+      // Ignoruj kliky na toast dialogy, modaly a jejich potomky
+      if (target.closest('.sync-toast') || 
+          target.closest('.modal') || 
+          target.closest('[class*="toast"]') ||
+          target.closest('[class*="modal"]')) {
+        return;
+      }
+
+      if (freezerRef.current && !freezerRef.current.contains(target)) {
         onToggle(); // Zavře mrazák
       }
     };
