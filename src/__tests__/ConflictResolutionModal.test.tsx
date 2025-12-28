@@ -25,7 +25,8 @@ describe('ConflictResolutionModal', () => {
     freezerData: {
       small: { '1': [], '2': [{ id: '1', name: 'Item 1', quantity: 1, template: '' }] },
       large: { '1': [], '2': [] },
-      smallMama: { '1': [], '2': [] }
+      smallMama: { '1': [], '2': [] },
+      cellar: { '1': [], '2': [], '3': [], '4': [], '5': [], '6': [], '7': [], '8': [], '9': [] }
     },
     templates: [{ id: 't1', name: 'Template 1', emoji: '🍕' }],
     lastModified: 1700000000000
@@ -35,7 +36,8 @@ describe('ConflictResolutionModal', () => {
     freezerData: {
       small: { '1': [{ id: '2', name: 'Item 2', quantity: 2, template: '' }], '2': [] },
       large: { '1': [], '2': [] },
-      smallMama: { '1': [], '2': [] }
+      smallMama: { '1': [], '2': [] },
+      cellar: { '1': [], '2': [], '3': [], '4': [], '5': [], '6': [], '7': [], '8': [], '9': [] }
     },
     templates: [{ id: 't1', name: 'Template 1', emoji: '🍕' }, { id: 't2', name: 'Template 2', emoji: '🍔' }],
     lastModified: 1700001000000

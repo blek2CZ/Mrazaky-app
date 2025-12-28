@@ -11,14 +11,15 @@ interface DrawerProps {
   onUpdateItem: (drawerId: number, itemId: string, quantity: number) => void;
   onDeleteItem: (drawerId: number, itemId: string) => void;
   onEditItem: (oldName: string, newName: string) => void;
-  onMoveItem: (itemId: string, targetFreezer: 'small' | 'large' | 'smallMama', targetDrawer: number) => void;
+  onMoveItem: (itemId: string, targetFreezer: 'small' | 'large' | 'smallMama' | 'cellar', targetDrawer: number) => void;
   freezerType: string;
-  totalDrawers: { small: number; large: number; smallMama: number };
+  totalDrawers: { small: number; large: number; smallMama: number; cellar: number };
   isExpanded: boolean;
   onToggle: () => void;
+  drawerLabel?: string; // "Šuplík" nebo "Police"
 }
 
-function Drawer({ drawerId, items, templates, allDrawers, onAddItem, onUpdateItem, onDeleteItem, onEditItem, onMoveItem, freezerType, totalDrawers, isExpanded, onToggle }: DrawerProps) {
+function Drawer({ drawerId, items, templates, allDrawers, onAddItem, onUpdateItem, onDeleteItem, onEditItem, onMoveItem, freezerType, totalDrawers, isExpanded, onToggle, drawerLabel = 'Šuplík' }: DrawerProps) {
   const [selectedTemplate, setSelectedTemplate] = useState('');
   const [customName, setCustomName] = useState('');
   const [quantity, setQuantity] = useState<number | ''>('');
@@ -60,7 +61,7 @@ function Drawer({ drawerId, items, templates, allDrawers, onAddItem, onUpdateIte
     <div className="drawer">
       <div className="drawer-header" onClick={(e) => e.stopPropagation()}>
         <div className="drawer-title" onClick={onToggle}>
-          <h3>Šuplík {drawerId}</h3>
+          <h3>{drawerLabel} {drawerId}</h3>
           <button type="button" className="toggle-drawer-button" onClick={(e) => { e.stopPropagation(); onToggle(); }}>
             {isExpanded ? '▼' : '▶'}
           </button>
@@ -319,15 +320,16 @@ interface FreezerProps {
   onUpdateItem: (drawerId: number, itemId: string, quantity: number) => void;
   onDeleteItem: (drawerId: number, itemId: string) => void;
   onEditItem: (oldName: string, newName: string) => void;
-  onMoveItem: (sourceDrawerId: number, itemId: string, targetFreezer: 'small' | 'large' | 'smallMama', targetDrawer: number) => void;
-  totalDrawers: { small: number; large: number; smallMama: number };
+  onMoveItem: (sourceDrawerId: number, itemId: string, targetFreezer: 'small' | 'large' | 'smallMama' | 'cellar', targetDrawer: number) => void;
+  totalDrawers: { small: number; large: number; smallMama: number; cellar: number };
   openDrawerId: string | null;
   onToggleDrawer: (drawerId: number) => void;
   isExpanded: boolean;
   onToggle: () => void;
+  drawerLabel?: string;
 }
 
-export default function Freezer({ title, drawerCount, freezerType, drawers, allDrawersFromBothFreezers, templates, onAddItem, onUpdateItem, onDeleteItem, onEditItem, onMoveItem, totalDrawers, openDrawerId, onToggleDrawer, isExpanded, onToggle }: FreezerProps) {
+export default function Freezer({ title, drawerCount, freezerType, drawers, allDrawersFromBothFreezers, templates, onAddItem, onUpdateItem, onDeleteItem, onEditItem, onMoveItem, totalDrawers, openDrawerId, onToggleDrawer, isExpanded, onToggle, drawerLabel = 'Šuplík' }: FreezerProps) {
   const freezerRef = useRef<HTMLDivElement>(null);
 
   // Click outside handler - zavře mrazák když klikneš mimo
@@ -364,7 +366,7 @@ export default function Freezer({ title, drawerCount, freezerType, drawers, allD
   return (
     <div className="freezer" ref={freezerRef}>
       <div className="freezer-header" onClick={onToggle} style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0' }}>
-        <h2 style={{ margin: 0 }}>{title} ({drawerCount} šuplíků)</h2>
+        <h2 style={{ margin: 0 }}>{title} ({drawerCount} {drawerLabel === 'Police' ? 'polic' : 'šuplíků'})</h2>
         <button type="button" style={{ 
           padding: '0.5em',
           minWidth: '40px',
@@ -393,6 +395,7 @@ export default function Freezer({ title, drawerCount, freezerType, drawers, allD
               onMoveItem={(itemId, targetFreezer, targetDrawer) => onMoveItem(drawerId, itemId, targetFreezer, targetDrawer)}
               freezerType={freezerType}
               totalDrawers={totalDrawers}
+              drawerLabel={drawerLabel}
               isExpanded={openDrawerId === `${freezerType}-${drawerId}`}
               onToggle={() => onToggleDrawer(drawerId)}
             />

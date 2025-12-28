@@ -11,12 +11,17 @@ export const loadFreezerData = (): FreezerData => {
     if (!data.smallMama) {
       data.smallMama = { 1: [] };
     }
+    // Migrace starých dat - přidej cellar (sklep), pokud neexistuje
+    if (!data.cellar) {
+      data.cellar = { 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [], 8: [], 9: [] };
+    }
     return data;
   }
   return {
     small: { 1: [], 2: [], 3: [] },
     large: { 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [] },
     smallMama: { 1: [] },
+    cellar: { 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [], 8: [], 9: [] },
   };
 };
 

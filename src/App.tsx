@@ -58,7 +58,7 @@ function App() {
   const [showSyncActions, setShowSyncActions] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [itemToDelete, setItemToDelete] = useState<{ freezerType: 'small' | 'large' | 'smallMama'; drawerId: number; itemId: string; itemName: string; itemQuantity: number } | null>(null);
+  const [itemToDelete, setItemToDelete] = useState<{ freezerType: 'small' | 'large' | 'smallMama' | 'cellar'; drawerId: number; itemId: string; itemName: string; itemQuantity: number } | null>(null);
   const [showDeleteTemplateConfirm, setShowDeleteTemplateConfirm] = useState(false);
   const [templateToDelete, setTemplateToDelete] = useState<{ id: string; name: string } | null>(null);
   const initialSyncDone = useRef<boolean>(false);
@@ -472,7 +472,7 @@ function App() {
     setTimeout(() => setSuccessMessage(null), 5000);
   };
 
-  const handleAddItem = async (freezerType: 'small' | 'large' | 'smallMama', drawerId: number, item: Item) => {
+  const handleAddItem = async (freezerType: 'small' | 'large' | 'smallMama' | 'cellar', drawerId: number, item: Item) => {
     const newFreezerData = {
       ...freezerData,
       [freezerType]: {
@@ -494,7 +494,7 @@ function App() {
     }
   };
 
-  const handleUpdateItem = async (freezerType: 'small' | 'large' | 'smallMama', drawerId: number, itemId: string, quantity: number) => {
+  const handleUpdateItem = async (freezerType: 'small' | 'large' | 'smallMama' | 'cellar', drawerId: number, itemId: string, quantity: number) => {
     if (quantity <= 0) {
       await handleDeleteItem(freezerType, drawerId, itemId);
       return;
@@ -513,7 +513,7 @@ function App() {
     setFreezerData(newFreezerData);
   };
 
-  const handleDeleteItem = async (freezerType: 'small' | 'large' | 'smallMama', drawerId: number, itemId: string) => {
+  const handleDeleteItem = async (freezerType: 'small' | 'large' | 'smallMama' | 'cellar', drawerId: number, itemId: string) => {
     // Najít název položky pro potvrzovací dialog
     const item = freezerData[freezerType][drawerId].find(item => item.id === itemId);
     if (!item) return;
@@ -580,6 +580,12 @@ function App() {
           drawerId,
           items.map((item: Item) => item.name === oldName ? { ...item, name: newName } : item)
         ])
+      ) as { [drawerId: number]: Item[] },
+      cellar: Object.fromEntries(
+        Object.entries(freezerData.cellar).map(([drawerId, items]) => [
+          drawerId,
+          items.map((item: Item) => item.name === oldName ? { ...item, name: newName } : item)
+        ])
       ) as { [drawerId: number]: Item[] }
     };
     
@@ -611,6 +617,12 @@ function App() {
           drawerId,
           items.map((item: Item) => item.name === oldName ? { ...item, name: newName } : item)
         ])
+      ) as { [drawerId: number]: Item[] },
+      cellar: Object.fromEntries(
+        Object.entries(freezerData.cellar).map(([drawerId, items]) => [
+          drawerId,
+          items.map((item: Item) => item.name === oldName ? { ...item, name: newName } : item)
+        ])
       ) as { [drawerId: number]: Item[] }
     };
     
@@ -621,10 +633,10 @@ function App() {
   };
 
   const handleMoveItem = async (
-    sourceFreezerType: 'small' | 'large' | 'smallMama',
+    sourceFreezerType: 'small' | 'large' | 'smallMama' | 'cellar',
     sourceDrawerId: number, 
     itemId: string, 
-    targetFreezer: 'small' | 'large' | 'smallMama', 
+    targetFreezer: 'small' | 'large' | 'smallMama' | 'cellar', 
     targetDrawer: number
   ) => {
     console.log('=== PŘESUN POLOŽKY - START ===');
@@ -651,6 +663,9 @@ function App() {
       ) as { [drawerId: number]: Item[] },
       smallMama: Object.fromEntries(
         Object.entries(freezerData.smallMama).map(([id, items]) => [id, [...items]])
+      ) as { [drawerId: number]: Item[] },
+      cellar: Object.fromEntries(
+        Object.entries(freezerData.cellar).map(([id, items]) => [id, [...items]])
       ) as { [drawerId: number]: Item[] }
     };
     console.log('✓ Kopie vytvořena');
@@ -659,7 +674,8 @@ function App() {
     const totalItemsBefore = 
       Object.values(newFreezerData.small).flat().length + 
       Object.values(newFreezerData.large).flat().length +
-      Object.values(newFreezerData.smallMama).flat().length;
+      Object.values(newFreezerData.smallMama).flat().length +
+      Object.values(newFreezerData.cellar).flat().length;
     console.log('📊 Celkem položek před změnou:', totalItemsBefore);
     
     // KROK 5: PŘIDEJ DO CÍLE (priorita - nejdřív přidat)
@@ -745,6 +761,7 @@ function App() {
       ...Object.values(freezerData.small).flat(),
       ...Object.values(freezerData.large).flat(),
       ...Object.values(freezerData.smallMama).flat(),
+      ...Object.values(freezerData.cellar).flat(),
     ];
     return allItems.some(item => item.name === name);
   };
@@ -1292,7 +1309,8 @@ function App() {
                 const freezers = [
                   { type: 'small' as const, name: 'Malý', data: freezerData.small },
                   { type: 'large' as const, name: 'Velký', data: freezerData.large },
-                  { type: 'smallMama' as const, name: 'Malý mama', data: freezerData.smallMama }
+                  { type: 'smallMama' as const, name: 'Malý mama', data: freezerData.smallMama },
+                  { type: 'cellar' as const, name: '📦 Sklep', data: freezerData.cellar }
                 ];
                 
                 freezers.forEach(freezer => {
@@ -1324,7 +1342,7 @@ function App() {
                             <span className="item-quantity">{result.item.quantity} ks</span>
                           </div>
                           <div className="item-location">
-                            {result.freezerName} → Šuplík {result.drawerNum}
+                            {result.freezerName} → {result.freezerType === 'cellar' ? 'Police' : 'Šuplík'} {result.drawerNum}
                           </div>
                         </div>
                       ))}
@@ -1359,7 +1377,8 @@ function App() {
         allDrawersFromBothFreezers={{
           ...Object.fromEntries(Object.entries(freezerData.small).map(([id, items]) => [`small-${id}`, items])),
           ...Object.fromEntries(Object.entries(freezerData.large).map(([id, items]) => [`large-${id}`, items])),
-          ...Object.fromEntries(Object.entries(freezerData.smallMama).map(([id, items]) => [`smallMama-${id}`, items]))
+          ...Object.fromEntries(Object.entries(freezerData.smallMama).map(([id, items]) => [`smallMama-${id}`, items])),
+          ...Object.fromEntries(Object.entries(freezerData.cellar).map(([id, items]) => [`cellar-${id}`, items]))
         }}
         templates={templates}
         onAddItem={(drawerId, item) => handleAddItem('small', drawerId, item)}
@@ -1369,7 +1388,7 @@ function App() {
         onMoveItem={(sourceDrawerId, itemId, targetFreezer, targetDrawer) => 
           handleMoveItem('small', sourceDrawerId, itemId, targetFreezer, targetDrawer)
         }
-        totalDrawers={{ small: 3, large: 7, smallMama: 1 }}
+        totalDrawers={{ small: 3, large: 7, smallMama: 1, cellar: 9 }}
         openDrawerId={openSection?.startsWith('small-') ? openSection : null}
         onToggleDrawer={(drawerId) => {
           const sectionId = `small-${drawerId}`;
@@ -1387,7 +1406,8 @@ function App() {
         allDrawersFromBothFreezers={{
           ...Object.fromEntries(Object.entries(freezerData.small).map(([id, items]) => [`small-${id}`, items])),
           ...Object.fromEntries(Object.entries(freezerData.large).map(([id, items]) => [`large-${id}`, items])),
-          ...Object.fromEntries(Object.entries(freezerData.smallMama).map(([id, items]) => [`smallMama-${id}`, items]))
+          ...Object.fromEntries(Object.entries(freezerData.smallMama).map(([id, items]) => [`smallMama-${id}`, items])),
+          ...Object.fromEntries(Object.entries(freezerData.cellar).map(([id, items]) => [`cellar-${id}`, items]))
         }}
         templates={templates}
         onAddItem={(drawerId, item) => handleAddItem('large', drawerId, item)}
@@ -1397,7 +1417,7 @@ function App() {
         onMoveItem={(sourceDrawerId, itemId, targetFreezer, targetDrawer) => 
           handleMoveItem('large', sourceDrawerId, itemId, targetFreezer, targetDrawer)
         }
-        totalDrawers={{ small: 3, large: 7, smallMama: 1 }}
+        totalDrawers={{ small: 3, large: 7, smallMama: 1, cellar: 9 }}
         openDrawerId={openSection?.startsWith('large-') ? openSection : null}
         onToggleDrawer={(drawerId) => {
           const sectionId = `large-${drawerId}`;
@@ -1415,7 +1435,8 @@ function App() {
         allDrawersFromBothFreezers={{
           ...Object.fromEntries(Object.entries(freezerData.small).map(([id, items]) => [`small-${id}`, items])),
           ...Object.fromEntries(Object.entries(freezerData.large).map(([id, items]) => [`large-${id}`, items])),
-          ...Object.fromEntries(Object.entries(freezerData.smallMama).map(([id, items]) => [`smallMama-${id}`, items]))
+          ...Object.fromEntries(Object.entries(freezerData.smallMama).map(([id, items]) => [`smallMama-${id}`, items])),
+          ...Object.fromEntries(Object.entries(freezerData.cellar).map(([id, items]) => [`cellar-${id}`, items]))
         }}
         templates={templates}
         onAddItem={(drawerId, item) => handleAddItem('smallMama', drawerId, item)}
@@ -1425,7 +1446,7 @@ function App() {
         onMoveItem={(sourceDrawerId, itemId, targetFreezer, targetDrawer) => 
           handleMoveItem('smallMama', sourceDrawerId, itemId, targetFreezer, targetDrawer)
         }
-        totalDrawers={{ small: 3, large: 7, smallMama: 1 }}
+        totalDrawers={{ small: 3, large: 7, smallMama: 1, cellar: 9 }}
         openDrawerId={openSection?.startsWith('smallMama-') ? openSection : null}
         onToggleDrawer={(drawerId) => {
           const sectionId = `smallMama-${drawerId}`;
@@ -1433,6 +1454,36 @@ function App() {
         }}
         isExpanded={openFreezers.has('smallMama')}
         onToggle={() => handleToggleFreezer('smallMama')}
+      />
+
+      <Freezer
+        title="📦 Sklep"
+        drawerCount={9}
+        freezerType="cellar"
+        drawers={freezerData.cellar}
+        allDrawersFromBothFreezers={{
+          ...Object.fromEntries(Object.entries(freezerData.small).map(([id, items]) => [`small-${id}`, items])),
+          ...Object.fromEntries(Object.entries(freezerData.large).map(([id, items]) => [`large-${id}`, items])),
+          ...Object.fromEntries(Object.entries(freezerData.smallMama).map(([id, items]) => [`smallMama-${id}`, items])),
+          ...Object.fromEntries(Object.entries(freezerData.cellar).map(([id, items]) => [`cellar-${id}`, items]))
+        }}
+        templates={templates}
+        onAddItem={(drawerId, item) => handleAddItem('cellar', drawerId, item)}
+        onUpdateItem={(drawerId, itemId, quantity) => handleUpdateItem('cellar', drawerId, itemId, quantity)}
+        onDeleteItem={(drawerId, itemId) => handleDeleteItem('cellar', drawerId, itemId)}
+        onEditItem={handleEditItemName}
+        onMoveItem={(sourceDrawerId, itemId, targetFreezer, targetDrawer) => 
+          handleMoveItem('cellar', sourceDrawerId, itemId, targetFreezer, targetDrawer)
+        }
+        totalDrawers={{ small: 3, large: 7, smallMama: 1, cellar: 9 }}
+        openDrawerId={openSection?.startsWith('cellar-') ? openSection : null}
+        onToggleDrawer={(drawerId) => {
+          const sectionId = `cellar-${drawerId}`;
+          setOpenSection(openSection === sectionId ? null : sectionId);
+        }}
+        drawerLabel="Police"
+        isExpanded={openFreezers.has('cellar')}
+        onToggle={() => handleToggleFreezer('cellar')}
       />
 
       {/* Loading overlay při nahrávání dat */}
