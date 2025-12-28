@@ -1341,23 +1341,73 @@ function App() {
                   });
                 });
                 
-                return results.length > 0 ? (
+                // Seskupení výsledků podle názvu položky
+                const groupedResults: { [name: string]: typeof results } = {};
+                results.forEach(result => {
+                  if (!groupedResults[result.item.name]) {
+                    groupedResults[result.item.name] = [];
+                  }
+                  groupedResults[result.item.name].push(result);
+                });
+                
+                const totalItems = results.length;
+                
+                return totalItems > 0 ? (
                   <>
                     <p style={{ color: '#646cff', fontWeight: '600', marginBottom: '0.75rem', padding: '0 1rem' }}>
-                      Nalezeno {results.length} {results.length === 1 ? 'položka' : results.length < 5 ? 'položky' : 'položek'}:
+                      Nalezeno {Object.keys(groupedResults).length} {Object.keys(groupedResults).length === 1 ? 'položka' : Object.keys(groupedResults).length < 5 ? 'položky' : 'položek'}:
                     </p>
                     <div className="items-list">
-                      {results.map((result, index) => (
-                        <div key={index} className="item">
-                          <div className="item-info">
-                            <span className="item-name">{result.item.name}</span>
-                            <span className="item-quantity">{result.item.quantity} ks</span>
+                      {Object.entries(groupedResults).map(([itemName, locations]) => {
+                        const totalQuantity = locations.reduce((sum, loc) => sum + loc.item.quantity, 0);
+                        const hasMultipleLocations = locations.length > 1;
+                        
+                        return (
+                          <div key={itemName} className="item" style={{ paddingBottom: hasMultipleLocations ? '1rem' : undefined }}>
+                            <div className="item-info">
+                              <span className="item-name">{itemName}</span>
+                              {!hasMultipleLocations && (
+                                <span className="item-quantity">{locations[0].item.quantity} ks</span>
+                              )}
+                            </div>
+                            {locations.map((result, idx) => (
+                              <div key={idx} style={{ 
+                                display: 'flex', 
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                paddingLeft: hasMultipleLocations ? '1rem' : '0',
+                                marginTop: idx === 0 && hasMultipleLocations ? '0.5rem' : '0.25rem',
+                                fontSize: hasMultipleLocations ? '0.9em' : '1em'
+                              }}>
+                                {hasMultipleLocations && (
+                                  <span style={{ color: '#999', minWidth: '50px' }}>{result.item.quantity} ks</span>
+                                )}
+                                <span className="item-location" style={{ flex: 1, textAlign: hasMultipleLocations ? 'left' : 'center' }}>
+                                  {result.freezerName} → {result.freezerType === 'cellar' ? 'Police' : 'Šuplík'} {result.drawerNum}
+                                </span>
+                              </div>
+                            ))}
+                            {hasMultipleLocations && (
+                              <>
+                                <div style={{ 
+                                  borderTop: '1px solid #444', 
+                                  margin: '0.5rem 0 0.25rem 0' 
+                                }}></div>
+                                <div style={{ 
+                                  display: 'flex', 
+                                  justifyContent: 'space-between',
+                                  fontWeight: '600',
+                                  color: '#646cff',
+                                  paddingLeft: '1rem'
+                                }}>
+                                  <span>Celkem:</span>
+                                  <span>{totalQuantity} ks</span>
+                                </div>
+                              </>
+                            )}
                           </div>
-                          <div className="item-location">
-                            {result.freezerName} → {result.freezerType === 'cellar' ? 'Police' : 'Šuplík'} {result.drawerNum}
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </>
                 ) : (
