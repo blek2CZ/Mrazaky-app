@@ -39,6 +39,11 @@ export const importData = (file: File): Promise<{ freezerData: FreezerData; temp
           data.freezerData.smallMama = { 1: [] };
         }
         
+        // Migrace starých dat - přidej cellar, pokud neexistuje
+        if (!data.freezerData.cellar) {
+          data.freezerData.cellar = { 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [], 8: [], 9: [] };
+        }
+        
         resolve({
           freezerData: data.freezerData,
           templates: data.templates,

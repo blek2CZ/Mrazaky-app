@@ -164,6 +164,16 @@ export const subscribeToSync = (
         return;
       }
       
+      // Migrace starých dat - přidej smallMama, pokud neexistuje
+      if (!data.freezerData.smallMama) {
+        data.freezerData.smallMama = { 1: [] };
+      }
+      
+      // Migrace starých dat - přidej cellar, pokud neexistuje
+      if (!data.freezerData.cellar) {
+        data.freezerData.cellar = { 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [], 8: [], 9: [] };
+      }
+      
       onDataUpdate({
         freezerData: data.freezerData,
         templates: data.templates,
@@ -272,6 +282,16 @@ export const fetchDataFromFirebase = async (
     // Kontrola, zda nebyl kód invalidován
     if (serverData.invalidated) {
       return { success: false, invalidated: true, error: 'Synchronizační kód byl invalidován' };
+    }
+
+    // Migrace starých dat - přidej smallMama, pokud neexistuje
+    if (!serverData.freezerData.smallMama) {
+      serverData.freezerData.smallMama = { 1: [] };
+    }
+    
+    // Migrace starých dat - přidej cellar, pokud neexistuje
+    if (!serverData.freezerData.cellar) {
+      serverData.freezerData.cellar = { 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [], 8: [], 9: [] };
     }
 
     return {
