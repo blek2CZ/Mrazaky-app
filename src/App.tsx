@@ -1363,13 +1363,13 @@ function App() {
                         const hasMultipleLocations = locations.length > 1;
                         
                         return (
-                          <div key={itemName} className="item" style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                            <div className="item-info" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: hasMultipleLocations ? '0.25rem' : '0' }}>
-                              <span className="item-name">{itemName}</span>
-                              <span className="item-quantity">{totalQuantity} ks</span>
-                            </div>
+                          <div key={itemName} className="item" style={hasMultipleLocations ? { display: 'flex', flexDirection: 'column', gap: '0.25rem' } : {}}>
                             {hasMultipleLocations ? (
                               <>
+                                <div className="item-info" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                                  <span className="item-name">{itemName}</span>
+                                  <span className="item-quantity">{totalQuantity} ks</span>
+                                </div>
                                 {locations.map((result, idx) => (
                                   <div key={idx} style={{ 
                                     display: 'flex', 
@@ -1387,9 +1387,15 @@ function App() {
                                 ))}
                               </>
                             ) : (
-                              <div className="item-location" style={{ textAlign: 'center', fontSize: '0.9em', color: '#999' }}>
-                                {locations[0].freezerName} → {locations[0].freezerType === 'cellar' ? 'Police' : 'Šuplík'} {locations[0].drawerNum}
-                              </div>
+                              <>
+                                <div className="item-info">
+                                  <span className="item-name">{itemName}</span>
+                                  <span className="item-quantity">{totalQuantity} ks</span>
+                                </div>
+                                <div className="item-location">
+                                  {locations[0].freezerName} → {locations[0].freezerType === 'cellar' ? 'Police' : 'Šuplík'} {locations[0].drawerNum}
+                                </div>
+                              </>
                             )}
                           </div>
                         );
