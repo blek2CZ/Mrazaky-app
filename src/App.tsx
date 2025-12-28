@@ -1370,7 +1370,7 @@ function App() {
       />
 
 <Freezer
-        title="Malý mrazák"
+        title="❄️ Malý mrazák"
         drawerCount={3}
         freezerType="small"
         drawers={freezerData.small}
@@ -1399,7 +1399,7 @@ function App() {
       />
 
       <Freezer
-        title="Velký mrazák"
+        title="❄️ Velký mrazák"
         drawerCount={7}
         freezerType="large"
         drawers={freezerData.large}
@@ -1428,7 +1428,7 @@ function App() {
       />
 
       <Freezer
-        title="Malý mama"
+        title="❄️ Malý mama"
         drawerCount={1}
         freezerType="smallMama"
         drawers={freezerData.smallMama}
