@@ -1350,6 +1350,21 @@ function App() {
                   groupedResults[result.item.name].push(result);
                 });
                 
+                // Sloučení duplikátů ze stejného umístění
+                Object.keys(groupedResults).forEach(itemName => {
+                  const locationMap = new Map<string, typeof results[0]>();
+                  groupedResults[itemName].forEach(result => {
+                    const key = `${result.freezerType}-${result.drawerNum}`;
+                    const existing = locationMap.get(key);
+                    if (existing) {
+                      existing.item.quantity += result.item.quantity;
+                    } else {
+                      locationMap.set(key, { ...result, item: { ...result.item } });
+                    }
+                  });
+                  groupedResults[itemName] = Array.from(locationMap.values());
+                });
+                
                 const totalItems = results.length;
                 
                 return totalItems > 0 ? (
