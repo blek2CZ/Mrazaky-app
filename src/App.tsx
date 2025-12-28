@@ -1366,7 +1366,7 @@ function App() {
                           <div key={itemName} className="item" style={hasMultipleLocations ? { display: 'flex', flexDirection: 'column', gap: '0.25rem' } : {}}>
                             {hasMultipleLocations ? (
                               <>
-                                <div className="item-info" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                                <div className="item-info">
                                   <span className="item-name">{itemName}</span>
                                   <span className="item-quantity">{totalQuantity} ks</span>
                                 </div>
@@ -1380,7 +1380,7 @@ function App() {
                                     color: '#ccc'
                                   }}>
                                     <span style={{ minWidth: '50px' }}>{result.item.quantity} ks</span>
-                                    <span style={{ flex: 1, paddingLeft: '1rem' }}>
+                                    <span style={{ flex: 1, paddingLeft: '1rem', textAlign: 'right' }}>
                                       {result.freezerName} → {result.freezerType === 'cellar' ? 'Police' : 'Šuplík'} {result.drawerNum}
                                     </span>
                                   </div>
