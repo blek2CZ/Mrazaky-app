@@ -1371,9 +1371,9 @@ function App() {
                             {hasMultipleLocations ? (
                               <div style={{ fontSize: '0.9em', color: '#999', marginTop: '0.25rem' }}>
                                 {locations.map((result, idx) => (
-                                  <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingLeft: '1rem', marginTop: idx > 0 ? '0.15rem' : '0' }}>
-                                    <span style={{ textAlign: 'right', minWidth: '50px', marginRight: '0.5rem' }}>{result.item.quantity} ks</span>
-                                    <span style={{ flex: 1 }}>— {result.freezerName} → {result.freezerType === 'cellar' ? 'Police' : 'Šuplík'} {result.drawerNum}</span>
+                                  <div key={idx} style={{ display: 'flex', alignItems: 'center', paddingLeft: '1rem', marginTop: idx > 0 ? '0.15rem' : '0' }}>
+                                    <span style={{ display: 'inline-block', textAlign: 'right', width: '50px', marginRight: '0.5rem' }}>{result.item.quantity} ks</span>
+                                    <span>— {result.freezerName} → {result.freezerType === 'cellar' ? 'Police' : 'Šuplík'} {result.drawerNum}</span>
                                   </div>
                                 ))}
                               </div>
