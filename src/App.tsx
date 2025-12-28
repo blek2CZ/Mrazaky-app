@@ -1363,32 +1363,30 @@ function App() {
                         const hasMultipleLocations = locations.length > 1;
                         
                         return (
-                          <div key={itemName} className="item" style={{ paddingBottom: hasMultipleLocations ? '1rem' : undefined }}>
-                            <div className="item-info">
+                          <div key={itemName} className="item" style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                            <div className="item-info" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: hasMultipleLocations ? '0.25rem' : '0' }}>
                               <span className="item-name">{itemName}</span>
                               {!hasMultipleLocations && (
                                 <span className="item-quantity">{locations[0].item.quantity} ks</span>
                               )}
                             </div>
-                            {locations.map((result, idx) => (
-                              <div key={idx} style={{ 
-                                display: 'flex', 
-                                justifyContent: 'space-between',
-                                alignItems: 'center',
-                                paddingLeft: hasMultipleLocations ? '1rem' : '0',
-                                marginTop: idx === 0 && hasMultipleLocations ? '0.5rem' : '0.25rem',
-                                fontSize: hasMultipleLocations ? '0.9em' : '1em'
-                              }}>
-                                {hasMultipleLocations && (
-                                  <span style={{ color: '#999', minWidth: '50px' }}>{result.item.quantity} ks</span>
-                                )}
-                                <span className="item-location" style={{ flex: 1, textAlign: hasMultipleLocations ? 'left' : 'center' }}>
-                                  {result.freezerName} → {result.freezerType === 'cellar' ? 'Police' : 'Šuplík'} {result.drawerNum}
-                                </span>
-                              </div>
-                            ))}
-                            {hasMultipleLocations && (
+                            {hasMultipleLocations ? (
                               <>
+                                {locations.map((result, idx) => (
+                                  <div key={idx} style={{ 
+                                    display: 'flex', 
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    paddingLeft: '1rem',
+                                    fontSize: '0.9em',
+                                    color: '#ccc'
+                                  }}>
+                                    <span style={{ minWidth: '50px' }}>{result.item.quantity} ks</span>
+                                    <span style={{ flex: 1, paddingLeft: '1rem' }}>
+                                      {result.freezerName} → {result.freezerType === 'cellar' ? 'Police' : 'Šuplík'} {result.drawerNum}
+                                    </span>
+                                  </div>
+                                ))}
                                 <div style={{ 
                                   borderTop: '1px solid #444', 
                                   margin: '0.5rem 0 0.25rem 0' 
@@ -1404,6 +1402,10 @@ function App() {
                                   <span>{totalQuantity} ks</span>
                                 </div>
                               </>
+                            ) : (
+                              <div className="item-location" style={{ textAlign: 'center', fontSize: '0.9em', color: '#999' }}>
+                                {locations[0].freezerName} → {locations[0].freezerType === 'cellar' ? 'Police' : 'Šuplík'} {locations[0].drawerNum}
+                              </div>
                             )}
                           </div>
                         );
