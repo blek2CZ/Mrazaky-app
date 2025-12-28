@@ -47,6 +47,7 @@ h1 {
 
   #root {
     padding: 1rem;
+    padding-bottom: 120px; /* Extra prostor pro toast notifikace na konci stránky */
     max-width: 100%;
   }
 
