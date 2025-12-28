@@ -202,7 +202,7 @@ function Drawer({ drawerId, items, templates, allDrawers, onAddItem, onUpdateIte
                             onChange={(e) => {
                               const [targetFreezer, targetDrawer] = e.target.value.split('-');
                               if (targetFreezer && targetDrawer) {
-                                onMoveItem(item.id, targetFreezer as 'small' | 'large', parseInt(targetDrawer));
+                                onMoveItem(item.id, targetFreezer as 'small' | 'large' | 'smallMama' | 'cellar', parseInt(targetDrawer));
                                 setMovingItemId(null);
                               }
                             }}
@@ -240,6 +240,17 @@ function Drawer({ drawerId, items, templates, allDrawers, onAddItem, onUpdateIte
                                   disabled={freezerType === 'smallMama' && d === drawerId}
                                 >
                                   Šuplík {d}
+                                </option>
+                              ))}
+                            </optgroup>
+                            <optgroup label="Sklep">
+                              {Array.from({ length: totalDrawers.cellar }, (_, i) => i + 1).map(d => (
+                                <option 
+                                  key={`cellar-${d}`} 
+                                  value={`cellar-${d}`}
+                                  disabled={freezerType === 'cellar' && d === drawerId}
+                                >
+                                  Police {d}
                                 </option>
                               ))}
                             </optgroup>
