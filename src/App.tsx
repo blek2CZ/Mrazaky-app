@@ -1366,9 +1366,7 @@ function App() {
                           <div key={itemName} className="item" style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
                             <div className="item-info" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: hasMultipleLocations ? '0.25rem' : '0' }}>
                               <span className="item-name">{itemName}</span>
-                              {!hasMultipleLocations && (
-                                <span className="item-quantity">{locations[0].item.quantity} ks</span>
-                              )}
+                              <span className="item-quantity">{totalQuantity} ks</span>
                             </div>
                             {hasMultipleLocations ? (
                               <>
@@ -1387,20 +1385,6 @@ function App() {
                                     </span>
                                   </div>
                                 ))}
-                                <div style={{ 
-                                  borderTop: '1px solid #444', 
-                                  margin: '0.5rem 0 0.25rem 0' 
-                                }}></div>
-                                <div style={{ 
-                                  display: 'flex', 
-                                  justifyContent: 'space-between',
-                                  fontWeight: '600',
-                                  color: '#646cff',
-                                  paddingLeft: '1rem'
-                                }}>
-                                  <span>Celkem:</span>
-                                  <span>{totalQuantity} ks</span>
-                                </div>
                               </>
                             ) : (
                               <div className="item-location" style={{ textAlign: 'center', fontSize: '0.9em', color: '#999' }}>
