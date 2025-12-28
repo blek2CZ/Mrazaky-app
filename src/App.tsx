@@ -48,6 +48,7 @@ function App() {
   const [isUploading, setIsUploading] = useState(false);
   const [openSection, setOpenSection] = useState<string | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [openFreezers, setOpenFreezers] = useState<Set<string>>(new Set()); // Sbalené mrazáky
   const [showConflictResolution, setShowConflictResolution] = useState(false);
   const [conflictServerData, setConflictServerData] = useState<{ freezerData: FreezerData; templates: ItemTemplate[]; lastModified: number } | null>(null);
   const [lastModified, setLastModified] = useState<number>(() => {
@@ -748,6 +749,18 @@ function App() {
     return allItems.some(item => item.name === name);
   };
 
+  const handleToggleFreezer = (freezerType: string) => {
+    setOpenFreezers(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(freezerType)) {
+        newSet.delete(freezerType);
+      } else {
+        newSet.add(freezerType);
+      }
+      return newSet;
+    });
+  };
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleGenerateSync = async (code: string, passwordHash: string) => {
@@ -1362,6 +1375,8 @@ function App() {
           const sectionId = `small-${drawerId}`;
           setOpenSection(openSection === sectionId ? null : sectionId);
         }}
+        isExpanded={openFreezers.has('small')}
+        onToggle={() => handleToggleFreezer('small')}
       />
 
       <Freezer
@@ -1388,6 +1403,8 @@ function App() {
           const sectionId = `large-${drawerId}`;
           setOpenSection(openSection === sectionId ? null : sectionId);
         }}
+        isExpanded={openFreezers.has('large')}
+        onToggle={() => handleToggleFreezer('large')}
       />
 
       <Freezer
@@ -1414,6 +1431,8 @@ function App() {
           const sectionId = `smallMama-${drawerId}`;
           setOpenSection(openSection === sectionId ? null : sectionId);
         }}
+        isExpanded={openFreezers.has('smallMama')}
+        onToggle={() => handleToggleFreezer('smallMama')}
       />
 
       {/* Loading overlay při nahrávání dat */}

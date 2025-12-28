@@ -323,32 +323,49 @@ interface FreezerProps {
   totalDrawers: { small: number; large: number; smallMama: number };
   openDrawerId: string | null;
   onToggleDrawer: (drawerId: number) => void;
+  isExpanded: boolean;
+  onToggle: () => void;
 }
 
-export default function Freezer({ title, drawerCount, freezerType, drawers, allDrawersFromBothFreezers, templates, onAddItem, onUpdateItem, onDeleteItem, onEditItem, onMoveItem, totalDrawers, openDrawerId, onToggleDrawer }: FreezerProps) {
+export default function Freezer({ title, drawerCount, freezerType, drawers, allDrawersFromBothFreezers, templates, onAddItem, onUpdateItem, onDeleteItem, onEditItem, onMoveItem, totalDrawers, openDrawerId, onToggleDrawer, isExpanded, onToggle }: FreezerProps) {
   return (
     <div className="freezer">
-      <h2>{title} ({drawerCount} šuplíků)</h2>
-      <div className="drawers">
-        {Array.from({ length: drawerCount }, (_, i) => i + 1).map(drawerId => (
-          <Drawer
-            key={drawerId}
-            drawerId={drawerId}
-            items={drawers[drawerId] || []}
-            templates={templates}
-            allDrawers={allDrawersFromBothFreezers}
-            onAddItem={onAddItem}
-            onUpdateItem={onUpdateItem}
-            onDeleteItem={onDeleteItem}
-            onEditItem={onEditItem}
-            onMoveItem={(itemId, targetFreezer, targetDrawer) => onMoveItem(drawerId, itemId, targetFreezer, targetDrawer)}
-            freezerType={freezerType}
-            totalDrawers={totalDrawers}
-            isExpanded={openDrawerId === `${freezerType}-${drawerId}`}
-            onToggle={() => onToggleDrawer(drawerId)}
-          />
-        ))}
+      <div className="freezer-header" onClick={onToggle} style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0' }}>
+        <h2 style={{ margin: 0 }}>{title} ({drawerCount} šuplíků)</h2>
+        <button type="button" style={{ 
+          padding: '0.5em',
+          minWidth: '40px',
+          backgroundColor: 'transparent',
+          border: '1px solid #646cff',
+          color: '#646cff',
+          fontSize: '0.9em',
+          cursor: 'pointer'
+        }}>
+          {isExpanded ? '▼' : '▶'}
+        </button>
       </div>
+      {isExpanded && (
+        <div className="drawers">
+          {Array.from({ length: drawerCount }, (_, i) => i + 1).map(drawerId => (
+            <Drawer
+              key={drawerId}
+              drawerId={drawerId}
+              items={drawers[drawerId] || []}
+              templates={templates}
+              allDrawers={allDrawersFromBothFreezers}
+              onAddItem={onAddItem}
+              onUpdateItem={onUpdateItem}
+              onDeleteItem={onDeleteItem}
+              onEditItem={onEditItem}
+              onMoveItem={(itemId, targetFreezer, targetDrawer) => onMoveItem(drawerId, itemId, targetFreezer, targetDrawer)}
+              freezerType={freezerType}
+              totalDrawers={totalDrawers}
+              isExpanded={openDrawerId === `${freezerType}-${drawerId}`}
+              onToggle={() => onToggleDrawer(drawerId)}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
