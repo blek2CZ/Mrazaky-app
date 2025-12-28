@@ -1392,9 +1392,9 @@ function App() {
                               <span className="item-quantity">{totalQuantity} ks</span>
                             </div>
                             {hasMultipleLocations ? (
-                              <div style={{ fontSize: '0.9em', color: '#999', marginTop: '0.25rem', marginLeft: '-0.5rem', marginRight: '-0.5rem' }}>
+                              <div style={{ fontSize: '0.9em', color: '#999', marginTop: '0.25rem', marginLeft: '-0.5rem', marginRight: '-0.5rem', paddingLeft: '0.5rem' }}>
                                 {locations.map((result, idx) => (
-                                  <div key={idx} style={{ display: 'flex', alignItems: 'center', marginTop: idx > 0 ? '0.15rem' : '0', paddingLeft: '0.5rem' }}>
+                                  <div key={idx} style={{ display: 'flex', alignItems: 'center', marginTop: idx > 0 ? '0.15rem' : '0' }}>
                                     <span style={{ display: 'inline-block', textAlign: 'right', minWidth: '55px', marginRight: '8px' }}>{result.item.quantity} ks</span>
                                     <span>— {result.freezerName} → {result.freezerType === 'cellar' ? 'Police' : 'Šuplík'} {result.drawerNum}</span>
                                   </div>
