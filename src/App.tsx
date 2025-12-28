@@ -484,6 +484,14 @@ function App() {
   };
 
   const handleAddItem = async (freezerType: 'small' | 'large' | 'smallMama' | 'cellar', drawerId: number, item: Item) => {
+    // Kontrola, zda položka se stejným názvem už v šuplíku není
+    const existingItem = freezerData[freezerType][drawerId]?.find(i => i.name.toLowerCase() === item.name.toLowerCase());
+    
+    if (existingItem) {
+      showToast(`❌ Položka "${item.name}" už v tomto ${freezerType === 'cellar' ? 'policí' : 'šuplíku'} je!`, 'error');
+      return;
+    }
+    
     const newFreezerData = {
       ...freezerData,
       [freezerType]: {
