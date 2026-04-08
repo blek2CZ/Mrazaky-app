@@ -29,6 +29,7 @@ function Drawer({ drawerId, items, templates, allDrawers, onAddItem, onUpdateIte
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
   const [movingItemId, setMovingItemId] = useState<string | null>(null);
+  const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null);
 
   // Resetuj showAddForm při zavření šuplíku
   useEffect(() => {
@@ -42,6 +43,13 @@ function Drawer({ drawerId, items, templates, allDrawers, onAddItem, onUpdateIte
     const qty = typeof quantity === 'number' ? quantity : parseInt(quantity) || 0;
     if (!name || qty <= 0) return;
 
+    const duplicate = items.find(i => i.name.toLocaleLowerCase('cs') === name.toLocaleLowerCase('cs'));
+    if (duplicate) {
+      setDuplicateWarning(`Položka "${duplicate.name}" už v tomto ${drawerLabel.toLowerCase()} je!`);
+      return;
+    }
+
+    setDuplicateWarning(null);
     const newItem: Item = {
       id: Date.now().toString(),
       name,
@@ -83,7 +91,7 @@ function Drawer({ drawerId, items, templates, allDrawers, onAddItem, onUpdateIte
         <div className="add-item-form" onClick={(e) => e.stopPropagation()}>
           <div className="form-field">
             <label>Vyberte položku:</label>
-            <select value={selectedTemplate} onChange={(e) => setSelectedTemplate(e.target.value)}>
+            <select value={selectedTemplate} onChange={(e) => { setSelectedTemplate(e.target.value); setDuplicateWarning(null); }}>
               <option value="">-- Vyberte --</option>
               <option value="custom">+ Nová položka</option>
               {[...templates]
@@ -116,7 +124,7 @@ function Drawer({ drawerId, items, templates, allDrawers, onAddItem, onUpdateIte
               <input
                 type="text"
                 value={customName}
-                onChange={(e) => setCustomName(e.target.value)}
+                onChange={(e) => { setCustomName(e.target.value); setDuplicateWarning(null); }}
                 placeholder="Zadejte název"
                 autoFocus
               />
@@ -141,6 +149,9 @@ function Drawer({ drawerId, items, templates, allDrawers, onAddItem, onUpdateIte
               </button>
             </div>
           </div>
+          {duplicateWarning && (
+            <div className="duplicate-warning">⚠️ {duplicateWarning}</div>
+          )}
         </div>
           )}
 

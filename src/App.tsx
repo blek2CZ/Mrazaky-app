@@ -488,7 +488,8 @@ function App() {
     const existingItem = freezerData[freezerType][drawerId]?.find(i => i.name.toLowerCase() === item.name.toLowerCase());
     
     if (existingItem) {
-      showToast(`❌ Položka "${item.name}" už v tomto ${freezerType === 'cellar' ? 'policí' : 'šuplíku'} je!`, 'error');
+      setErrorMessage(`❌ Položka "${item.name}" už v tomto ${freezerType === 'cellar' ? 'policí' : 'šuplíku'} je!`);
+      setTimeout(() => setErrorMessage(null), 5000);
       return;
     }
     
@@ -1337,7 +1338,7 @@ function App() {
                   Object.entries(freezer.data).forEach(([drawerKey, items]) => {
                     const drawerNum = parseInt(drawerKey.replace('drawer', ''));
                     items.forEach((item: Item) => {
-                      if (item.name.toLowerCase().includes(searchQuery.toLowerCase())) {
+                      if (item.name.toLocaleLowerCase('cs').includes(searchQuery.toLocaleLowerCase('cs'))) {
                         results.push({
                           item,
                           freezerType: freezer.type,
