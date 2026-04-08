@@ -1,8 +1,11 @@
 import { FreezerData, ItemTemplate } from './types';
 
+// Bump when the exported data structure changes in a breaking way
+export const DATA_EXPORT_VERSION = '1.1';
+
 export const exportData = (freezerData: FreezerData, templates: ItemTemplate[]) => {
   const dataToExport = {
-    version: '1.0',
+    version: DATA_EXPORT_VERSION,
     exportDate: new Date().toISOString(),
     freezerData,
     templates,

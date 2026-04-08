@@ -6,6 +6,7 @@ import LoadingOverlay from './components/LoadingOverlay';
 import { DisconnectModal } from './components/DisconnectModal';
 import { ConflictResolutionModal } from './components/ConflictResolutionModal';
 import { NotificationSnackbar } from './components/NotificationSnackbar';
+import { ConfirmDialog } from './components/ConfirmDialog';
 import { FreezerData, Item, ItemTemplate } from './types';
 import { loadFreezerData, saveFreezerData, loadItemTemplates, saveItemTemplates } from './storage';
 import { exportData, importData } from './dataSync';
@@ -1044,259 +1045,64 @@ function App() {
       )}
 
       {showSyncConfirm && (
-        <div className="sync-toast" onClick={(e) => e.stopPropagation()} style={{
-          position: 'fixed',
-          bottom: '20px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          zIndex: 1001,
-          backgroundColor: 'white',
-          padding: '20px 30px',
-          borderRadius: '12px',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
-          minWidth: '300px',
-          maxWidth: '500px',
-          animation: 'slideUp 0.3s ease-out'
-        }}>
-          <div className="sync-toast-title" style={{ marginBottom: '15px', fontSize: '16px', fontWeight: '500' }}>
-            📊 Máte <strong>neuložené změny</strong>
-          </div>
-          <div className="sync-toast-message" style={{ marginBottom: '20px', color: '#666' }}>
-            Chcete je odeslat do cloudu?
-          </div>
-          <div style={{ display: 'flex', gap: '10px', justifyContent: 'space-between' }}>
-            <button
-              className="sync-toast-discard"
-              onClick={handleDiscardChanges}
-              style={{
-                padding: '10px 20px',
-                fontSize: '14px',
-                backgroundColor: '#ff5252',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontWeight: '500'
-              }}
-            >
-              🗑️ Zahodit změny
-            </button>
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <button
-                className="sync-toast-cancel"
-                onClick={() => setShowSyncConfirm(false)}
-                style={{
-                  padding: '10px 20px',
-                  fontSize: '14px',
-                  backgroundColor: '#f5f5f5',
-                  border: '1px solid #ddd',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontWeight: '500'
-                }}
-              >
-                Pokračovat v úpravách
-              </button>
-              <button
-                className="sync-toast-confirm"
-                onClick={handleConfirmSync}
-                style={{
-                  padding: '10px 20px',
-                  fontSize: '14px',
-                  backgroundColor: '#4CAF50',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontWeight: '500'
-              }}
-            >
-              ☁️ Odeslat hned
-            </button>
-            </div>
-          </div>
-        </div>
+        <ConfirmDialog
+          title="📊 Máte neuložené změny"
+          message="Chcete je odeslat do cloudu?"
+          position="bottom"
+          buttons={[
+            { label: '🗑️ Zahodit změny', variant: 'danger', onClick: handleDiscardChanges },
+            { label: 'Pokračovat v úpravách', variant: 'secondary', onClick: () => setShowSyncConfirm(false) },
+            { label: '☁️ Odeslat hned', variant: 'primary', onClick: handleConfirmSync },
+          ]}
+        />
       )}
 
       {showDeleteConfirm && itemToDelete && (
-        <div className="sync-toast" onClick={(e) => e.stopPropagation()} style={{
-          position: 'fixed',
-          bottom: '20px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          zIndex: 1001,
-          backgroundColor: 'white',
-          padding: '20px 30px',
-          borderRadius: '12px',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
-          minWidth: '300px',
-          maxWidth: '500px',
-          animation: 'slideUp 0.3s ease-out'
-        }}>
-          <div className="sync-toast-title" style={{ marginBottom: '15px', fontSize: '16px', fontWeight: '500' }}>
-            🗑️ Smazat položku?
-          </div>
-          <div className="sync-toast-message" style={{ marginBottom: '20px', color: '#666' }}>
-            <strong>{itemToDelete.itemName}</strong> ({itemToDelete.itemQuantity} ks)
-          </div>
-          <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-            <button
-              className="sync-toast-cancel"
-              onClick={() => {
-                setShowDeleteConfirm(false);
-                setItemToDelete(null);
-              }}
-              style={{
-                padding: '10px 20px',
-                fontSize: '14px',
-                backgroundColor: '#f5f5f5',
-                border: '1px solid #ddd',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontWeight: '500'
-              }}
-            >
-              Zrušit
-            </button>
-            <button
-              className="sync-toast-discard"
-              onClick={handleConfirmDelete}
-              style={{
-                padding: '10px 20px',
-                fontSize: '14px',
-                backgroundColor: '#ff5252',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontWeight: '500'
-              }}
-            >
-              Smazat
-            </button>
-          </div>
-        </div>
+        <ConfirmDialog
+          title="🗑️ Smazat položku?"
+          message={<><strong>{itemToDelete.itemName}</strong> ({itemToDelete.itemQuantity} ks)</>}
+          position="bottom"
+          buttons={[
+            { label: 'Zrušit', variant: 'secondary', onClick: () => { setShowDeleteConfirm(false); setItemToDelete(null); } },
+            { label: 'Smazat', variant: 'danger', onClick: handleConfirmDelete },
+          ]}
+        />
       )}
 
-      {/* Toast pro potvrzení smazání šablony */}
       {showDeleteTemplateConfirm && templateToDelete && (
-        <div className="sync-toast" onClick={(e) => e.stopPropagation()} style={{
-          position: 'fixed',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          backgroundColor: 'white',
-          padding: '24px',
-          borderRadius: '12px',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-          zIndex: 10000,
-          minWidth: '300px',
-          maxWidth: '90vw'
-        }}>
-          <h3 style={{ marginTop: 0, marginBottom: '15px', color: '#333' }}>Opravdu smazat šablonu?</h3>
-          <div className="sync-toast-message" style={{ marginBottom: '20px', color: '#666' }}>
-            <strong>{templateToDelete.name}</strong>
-          </div>
-          <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-            <button
-              className="sync-toast-cancel"
-              onClick={() => {
-                setShowDeleteTemplateConfirm(false);
-                setTemplateToDelete(null);
-              }}
-              style={{
-                padding: '10px 20px',
-                fontSize: '14px',
-                backgroundColor: '#f5f5f5',
-                border: '1px solid #ddd',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontWeight: '500'
-              }}
-            >
-              Zrušit
-            </button>
-            <button
-              className="sync-toast-discard"
-              onClick={handleConfirmDeleteTemplate}
-              style={{
-                padding: '10px 20px',
-                fontSize: '14px',
-                backgroundColor: '#ff5252',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontWeight: '500'
-              }}
-            >
-              Smazat
-            </button>
-          </div>
-        </div>
+        <ConfirmDialog
+          title="Opravdu smazat šablonu?"
+          message={<strong>{templateToDelete.name}</strong>}
+          position="center"
+          buttons={[
+            { label: 'Zrušit', variant: 'secondary', onClick: () => { setShowDeleteTemplateConfirm(false); setTemplateToDelete(null); } },
+            { label: 'Smazat', variant: 'danger', onClick: handleConfirmDeleteTemplate },
+          ]}
+        />
       )}
 
       {isSyncing && (
-        <div style={{
-          position: 'fixed',
-          bottom: '20px',
-          right: '20px',
-          zIndex: 1000,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '10px',
-          alignItems: 'flex-end'
-        }}>
+        <div className="sync-actions-panel">
           {hasUnsavedChanges && (
-            <button
-              onClick={handleManualSync}
-              style={{
-                padding: '15px 30px',
-                fontSize: '16px',
-                fontWeight: 'bold',
-                backgroundColor: '#4CAF50',
-                color: 'white',
-                border: 'none',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                boxShadow: '0 4px 8px rgba(0,0,0,0.3)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '10px'
-              }}
-            >
-              <span style={{ fontSize: '20px' }}>☁️</span>
+            <button className="sync-upload-btn" onClick={handleManualSync}>
+              <span>☁️</span>
               <span>Odeslat změny do cloudu</span>
             </button>
           )}
           <button
+            className="sync-check-btn"
             onClick={() => checkForUpdates(true, true)}
             disabled={isCheckingForUpdates}
-            style={{
-              padding: '12px 20px',
-              fontSize: '14px',
-              fontWeight: '500',
-              backgroundColor: isCheckingForUpdates ? '#ccc' : '#2196F3',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: isCheckingForUpdates ? 'not-allowed' : 'pointer',
-              boxShadow: '0 3px 6px rgba(0,0,0,0.2)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              opacity: isCheckingForUpdates ? 0.6 : 1
-            }}
           >
-            <span style={{ fontSize: '18px' }}>{isCheckingForUpdates ? '⏳' : '🔄'}</span>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+            <span>{isCheckingForUpdates ? '⏳' : '🔄'}</span>
+            <span className="sync-check-btn__text">
               <span>{isCheckingForUpdates ? 'Kontroluji...' : 'Zkontrolovat nová data'}</span>
               {lastChecked && !isCheckingForUpdates && (
-                <span style={{ fontSize: '11px', opacity: 0.8 }}>
+                <span className="sync-check-btn__last">
                   Naposledy: {new Date(lastChecked).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' })}
                 </span>
               )}
-            </div>
+            </span>
           </button>
         </div>
       )}
@@ -1311,32 +1117,21 @@ function App() {
         </div>
         {openSection === 'search' && (
           <div className="search-section" onClick={(e) => e.stopPropagation()}>
-            <div style={{ padding: '1rem', backgroundColor: 'rgb(183, 183, 183)', borderRadius: '6px', marginBottom: '1rem' }}>
+            <div className="search-input-box">
               <input
                 type="text"
                 placeholder="Zadejte název položky..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 autoFocus
-                style={{
-                  width: '100%',
-                  padding: '0.5rem',
-                  fontSize: '1rem',
-                  border: '1px solid #444',
-                  borderRadius: '4px',
-                  backgroundColor: 'white',
-                  color: '#333'
-                }}
               />
             </div>
             <div className="search-results-container">
               {searchQuery.trim() === '' ? (
-                <p style={{ color: '#999', textAlign: 'center', padding: '2rem', fontStyle: 'italic' }}>
-                  Začněte psát pro vyhledávání...
-                </p>
+                <p className="search-hint-text">Začněte psát pro vyhledávání...</p>
               ) : searchResults && searchResults.totalCount > 0 ? (
                 <>
-                  <p style={{ color: '#646cff', fontWeight: '600', marginBottom: '0.75rem', padding: '0 1rem' }}>
+                  <p className="search-count-label">
                     {(() => {
                       const n = Object.keys(searchResults.groupedResults).length;
                       return `Nalezeno ${n} ${n === 1 ? 'položka' : n < 5 ? 'položky' : 'položek'}:`;
@@ -1353,10 +1148,10 @@ function App() {
                             <span className="item-quantity">{totalQuantity} ks</span>
                           </div>
                           {hasMultipleLocations ? (
-                            <div style={{ fontSize: '0.9em', color: '#999', marginTop: '0.25rem', marginLeft: '-0.5rem', marginRight: '-0.5rem', paddingLeft: '0.5rem' }}>
+                            <div className="search-location-multi">
                               {locations.map((result, idx) => (
-                                <div key={idx} style={{ display: 'flex', alignItems: 'center', marginTop: idx > 0 ? '0.15rem' : '0' }}>
-                                  <span style={{ display: 'inline-block', textAlign: 'right', minWidth: '55px', marginRight: '8px' }}>{result.item.quantity} ks</span>
+                                <div key={idx} className="search-location-row" style={{ marginTop: idx > 0 ? '0.15rem' : '0' }}>
+                                  <span className="search-location-qty">{result.item.quantity} ks</span>
                                   <span>— {result.freezerName} → {result.freezerType === 'cellar' ? 'Police' : 'Šuplík'} {result.drawerNum}</span>
                                 </div>
                               ))}
@@ -1372,9 +1167,7 @@ function App() {
                   </div>
                 </>
               ) : (
-                <p style={{ textAlign: 'center', padding: '2rem', color: '#999', fontSize: '1.1rem' }}>
-                  ❌ Nenalezeno
-                </p>
+                <p className="search-no-results-text">❌ Nenalezeno</p>
               )}
             </div>
           </div>

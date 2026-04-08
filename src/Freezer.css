@@ -182,6 +182,19 @@
   white-space: nowrap; /* Zabrání zalomení množství */
 }
 
+.item-added-at {
+  font-size: 0.75rem;
+  color: #777;
+  white-space: nowrap;
+}
+
+.freezer-item-count {
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: #aaa;
+  margin-left: 0.25rem;
+}
+
 .item-actions {
   display: flex;
   gap: 0.5rem;

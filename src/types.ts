@@ -2,6 +2,7 @@ export interface Item {
   id: string;
   name: string;
   quantity: number;
+  addedAt?: string; // ISO 8601 datum přidání do mrazáku
 }
 
 export interface DrawerContent {

@@ -298,3 +298,124 @@
     width: 100% !important;
   }
 }
+
+/* Tlačítka sync akcí (vpravo dole) */
+.sync-actions-panel {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-end;
+}
+
+.sync-upload-btn {
+  padding: 15px 30px;
+  font-size: 16px;
+  font-weight: bold;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sync-check-btn {
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  background-color: #2196f3;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sync-check-btn:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.sync-check-btn__text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.sync-check-btn__last {
+  font-size: 11px;
+  opacity: 0.8;
+}
+
+/* Search input box */
+.search-input-box {
+  padding: 1rem;
+  background-color: rgb(183, 183, 183);
+  border-radius: 6px;
+  margin-bottom: 1rem;
+}
+
+.search-input-box input {
+  width: 100%;
+  padding: 0.5rem;
+  font-size: 1rem;
+  border: 1px solid #444;
+  border-radius: 4px;
+  background-color: white;
+  color: #333;
+  box-sizing: border-box;
+}
+
+/* Search results */
+.search-count-label {
+  color: #646cff;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  padding: 0 1rem;
+}
+
+.search-hint-text {
+  color: #999;
+  text-align: center;
+  padding: 2rem;
+  font-style: italic;
+}
+
+.search-no-results-text {
+  text-align: center;
+  padding: 2rem;
+  color: #999;
+  font-size: 1.1rem;
+}
+
+.search-location-multi {
+  font-size: 0.9em;
+  color: #999;
+  margin-top: 0.25rem;
+  margin-left: -0.5rem;
+  margin-right: -0.5rem;
+  padding-left: 0.5rem;
+}
+
+.search-location-row {
+  display: flex;
+  align-items: center;
+}
+
+.search-location-qty {
+  display: inline-block;
+  text-align: right;
+  min-width: 55px;
+  margin-right: 8px;
+}

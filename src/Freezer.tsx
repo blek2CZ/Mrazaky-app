@@ -54,6 +54,7 @@ function Drawer({ drawerId, items, templates, allDrawers, onAddItem, onUpdateIte
       id: Date.now().toString(),
       name,
       quantity: qty,
+      addedAt: new Date().toISOString(),
     };
 
     onAddItem(drawerId, newItem);
@@ -204,6 +205,11 @@ function Drawer({ drawerId, items, templates, allDrawers, onAddItem, onUpdateIte
                         <span className="item-name">{item.name}</span>
                       )}
                       <span className="item-quantity">{item.quantity} ks</span>
+                      {item.addedAt && (
+                        <span className="item-added-at" title={new Date(item.addedAt).toLocaleString('cs-CZ')}>
+                          🗓 {new Date(item.addedAt).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric', year: 'numeric' })}
+                        </span>
+                      )}
                     </div>
                     <div className="item-actions">
                       {movingItemId === item.id ? (
@@ -385,10 +391,18 @@ export default function Freezer({ title, drawerCount, freezerType, drawers, allD
     };
   }, [isExpanded, onToggle]);
 
+  const totalItemCount = Object.values(drawers).flat().reduce((sum, item) => sum + item.quantity, 0);
+  const totalDistinctItems = Object.values(drawers).flat().length;
+
   return (
     <div className="freezer" ref={freezerRef}>
       <div className="freezer-header" onClick={onToggle} style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0' }}>
-        <h2 style={{ margin: 0 }}>{title} ({drawerCount} {drawerLabel === 'Police' ? 'polic' : 'šuplíků'})</h2>
+        <h2 style={{ margin: 0 }}>
+          {title} ({drawerCount} {drawerLabel === 'Police' ? 'polic' : 'šuplíků'})
+          {totalDistinctItems > 0 && (
+            <span className="freezer-item-count"> · {totalDistinctItems} {totalDistinctItems === 1 ? 'druh' : totalDistinctItems < 5 ? 'druhy' : 'druhů'}, {totalItemCount} ks</span>
+          )}
+        </h2>
         <button type="button" style={{ 
           padding: '0.5em',
           minWidth: '40px',
