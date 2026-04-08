@@ -2,14 +2,14 @@ import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, setDoc, onSnapshot, getDoc } from 'firebase/firestore';
 import { FreezerData, ItemTemplate } from './types';
 
-// Firebase konfigurace - toto jsou veřejné klíče, je to bezpečné
+// Firebase konfigurace - hodnoty jsou načteny z .env.local (není v gitu)
 const firebaseConfig = {
-  apiKey: "AIzaSyAgnC9CcCzQMmWcU4vnZaM92cC_paieCYA",
-  authDomain: "mrazaky-app.firebaseapp.com",
-  projectId: "mrazaky-app",
-  storageBucket: "mrazaky-app.firebasestorage.app",
-  messagingSenderId: "928251154928",
-  appId: "1:928251154928:web:da4da2c2237a30c2424d35"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
 let app: any = null;

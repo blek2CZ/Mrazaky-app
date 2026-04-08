@@ -6,16 +6,20 @@ const STORAGE_KEY_TEMPLATES = 'mrazaky-templates';
 export const loadFreezerData = (): FreezerData => {
   const stored = localStorage.getItem(STORAGE_KEY_FREEZERS);
   if (stored) {
-    const data = JSON.parse(stored);
-    // Migrace starých dat - přidej smallMama, pokud neexistuje
-    if (!data.smallMama) {
-      data.smallMama = { 1: [] };
+    try {
+      const data = JSON.parse(stored);
+      // Migrace starých dat - přidej smallMama, pokud neexistuje
+      if (!data.smallMama) {
+        data.smallMama = { 1: [] };
+      }
+      // Migrace starých dat - přidej cellar (sklep), pokud neexistuje
+      if (!data.cellar) {
+        data.cellar = { 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [], 8: [], 9: [] };
+      }
+      return data;
+    } catch {
+      console.error('Nepodařilo se načíst data z localStorage – poškozená data, načítám výchozí stav.');
     }
-    // Migrace starých dat - přidej cellar (sklep), pokud neexistuje
-    if (!data.cellar) {
-      data.cellar = { 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [], 8: [], 9: [] };
-    }
-    return data;
   }
   return {
     small: { 1: [], 2: [], 3: [] },
@@ -32,7 +36,11 @@ export const saveFreezerData = (data: FreezerData): void => {
 export const loadItemTemplates = (): ItemTemplate[] => {
   const stored = localStorage.getItem(STORAGE_KEY_TEMPLATES);
   if (stored) {
-    return JSON.parse(stored);
+    try {
+      return JSON.parse(stored);
+    } catch {
+      console.error('Nepodařilo se načíst šablony z localStorage – poškozená data, načítám výchozí šablony.');
+    }
   }
   return [
     { id: '1', name: 'Kuřecí prsa' },

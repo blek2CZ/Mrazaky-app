@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import Freezer from './Freezer';
 import TemplatesManager from './TemplatesManager';
 import SyncModal from './SyncModal';
@@ -12,6 +12,9 @@ import { exportData, importData } from './dataSync';
 import { getSyncCode, saveSyncCode, clearSyncCode, syncDataToFirebase, syncDataToFirebaseForce, fetchDataFromFirebase, isFirebaseConfigured, invalidateSyncCode, getAdminPasswordHash } from './firebaseSync';
 import { verifyPasswordHash } from './adminAuth';
 import './App.css';
+
+// Počty šuplíků/polic pro každý mrazák/sklep – jedna konstanta pro celou aplikaci
+const DRAWER_COUNTS = { small: 3, large: 7, smallMama: 1, cellar: 9 } as const;
 
 // Funkce pro načtení posledního synchronizovaného stavu
 const loadLastSyncedData = (): { freezerData: FreezerData; templates: ItemTemplate[] } => {
@@ -483,9 +486,9 @@ function App() {
     setTimeout(() => setSuccessMessage(null), 5000);
   };
 
-  const handleAddItem = async (freezerType: 'small' | 'large' | 'smallMama' | 'cellar', drawerId: number, item: Item) => {
-    // Kontrola, zda položka se stejným názvem už v šuplíku není
-    const existingItem = freezerData[freezerType][drawerId]?.find(i => i.name.toLowerCase() === item.name.toLowerCase());
+  const handleAddItem = (freezerType: 'small' | 'large' | 'smallMama' | 'cellar', drawerId: number, item: Item) => {
+    // Kontrola, zda položka se stejným názvem už v šuplíku není (pojistka)
+    const existingItem = freezerData[freezerType][drawerId]?.find(i => i.name.toLocaleLowerCase('cs') === item.name.toLocaleLowerCase('cs'));
     
     if (existingItem) {
       setErrorMessage(`❌ Položka "${item.name}" už v tomto ${freezerType === 'cellar' ? 'policí' : 'šuplíku'} je!`);
@@ -514,9 +517,9 @@ function App() {
     }
   };
 
-  const handleUpdateItem = async (freezerType: 'small' | 'large' | 'smallMama' | 'cellar', drawerId: number, itemId: string, quantity: number) => {
+  const handleUpdateItem = (freezerType: 'small' | 'large' | 'smallMama' | 'cellar', drawerId: number, itemId: string, quantity: number) => {
     if (quantity <= 0) {
-      await handleDeleteItem(freezerType, drawerId, itemId);
+      handleDeleteItem(freezerType, drawerId, itemId);
       return;
     }
 
@@ -533,7 +536,7 @@ function App() {
     setFreezerData(newFreezerData);
   };
 
-  const handleDeleteItem = async (freezerType: 'small' | 'large' | 'smallMama' | 'cellar', drawerId: number, itemId: string) => {
+  const handleDeleteItem = (freezerType: 'small' | 'large' | 'smallMama' | 'cellar', drawerId: number, itemId: string) => {
     // Najít název položky pro potvrzovací dialog
     const item = freezerData[freezerType][drawerId].find(item => item.id === itemId);
     if (!item) return;
@@ -573,6 +576,21 @@ function App() {
     setTemplates(prev => [...prev, newTemplate]);
   };
 
+  // Pomocná funkce – přejmenuje položky s daným názvem ve všech šuplících najednou
+  const renameItemsInAllFreezers = (oldName: string, newName: string): FreezerData => {
+    const freezerTypes = ['small', 'large', 'smallMama', 'cellar'] as const;
+    const result: Partial<FreezerData> = {};
+    for (const type of freezerTypes) {
+      result[type] = Object.fromEntries(
+        Object.entries(freezerData[type]).map(([drawerId, items]) => [
+          drawerId,
+          (items as Item[]).map(item => item.name === oldName ? { ...item, name: newName } : item)
+        ])
+      ) as { [drawerId: number]: Item[] };
+    }
+    return result as FreezerData;
+  };
+
   const handleEditTemplate = (id: string, newName: string) => {
     // Najdi starý název šablony
     const oldTemplate = templates.find(t => t.id === id);
@@ -580,75 +598,15 @@ function App() {
     
     const oldName = oldTemplate.name;
     if (oldName === newName) return;
-    
-    // Aktualizuj všechny položky se starým názvem ve všech šuplících
-    const newFreezerData: FreezerData = {
-      small: Object.fromEntries(
-        Object.entries(freezerData.small).map(([drawerId, items]) => [
-          drawerId,
-          items.map((item: Item) => item.name === oldName ? { ...item, name: newName } : item)
-        ])
-      ) as { [drawerId: number]: Item[] },
-      large: Object.fromEntries(
-        Object.entries(freezerData.large).map(([drawerId, items]) => [
-          drawerId,
-          items.map((item: Item) => item.name === oldName ? { ...item, name: newName } : item)
-        ])
-      ) as { [drawerId: number]: Item[] },
-      smallMama: Object.fromEntries(
-        Object.entries(freezerData.smallMama).map(([drawerId, items]) => [
-          drawerId,
-          items.map((item: Item) => item.name === oldName ? { ...item, name: newName } : item)
-        ])
-      ) as { [drawerId: number]: Item[] },
-      cellar: Object.fromEntries(
-        Object.entries(freezerData.cellar).map(([drawerId, items]) => [
-          drawerId,
-          items.map((item: Item) => item.name === oldName ? { ...item, name: newName } : item)
-        ])
-      ) as { [drawerId: number]: Item[] }
-    };
-    
-    setFreezerData(newFreezerData);
-    
-    // Aktualizuj šablonu
+
+    setFreezerData(renameItemsInAllFreezers(oldName, newName));
     setTemplates(prev => prev.map(t => t.id === id ? { ...t, name: newName } : t));
   };
 
   const handleEditItemName = (oldName: string, newName: string) => {
     if (oldName === newName) return;
-    
-    // Aktualizuj všechny položky se starým názvem ve všech šuplících
-    const newFreezerData: FreezerData = {
-      small: Object.fromEntries(
-        Object.entries(freezerData.small).map(([drawerId, items]) => [
-          drawerId,
-          items.map((item: Item) => item.name === oldName ? { ...item, name: newName } : item)
-        ])
-      ) as { [drawerId: number]: Item[] },
-      large: Object.fromEntries(
-        Object.entries(freezerData.large).map(([drawerId, items]) => [
-          drawerId,
-          items.map((item: Item) => item.name === oldName ? { ...item, name: newName } : item)
-        ])
-      ) as { [drawerId: number]: Item[] },
-      smallMama: Object.fromEntries(
-        Object.entries(freezerData.smallMama).map(([drawerId, items]) => [
-          drawerId,
-          items.map((item: Item) => item.name === oldName ? { ...item, name: newName } : item)
-        ])
-      ) as { [drawerId: number]: Item[] },
-      cellar: Object.fromEntries(
-        Object.entries(freezerData.cellar).map(([drawerId, items]) => [
-          drawerId,
-          items.map((item: Item) => item.name === oldName ? { ...item, name: newName } : item)
-        ])
-      ) as { [drawerId: number]: Item[] }
-    };
-    
-    setFreezerData(newFreezerData);
-    
-    // Aktualizuj template se stejným názvem
+
+    setFreezerData(renameItemsInAllFreezers(oldName, newName));
     setTemplates(prev => prev.map(t => t.name === oldName ? { ...t, name: newName } : t));
   };
 
@@ -667,7 +625,8 @@ function App() {
     const sourceItem = freezerData[sourceFreezerType][sourceDrawerId]?.find(item => item.id === itemId);
     if (!sourceItem) {
       console.error('❌ Položka nenalezena!');
-      alert('Chyba: Položka nebyla nalezena!');
+      setErrorMessage('❌ Chyba při přesunu: položka nebyla nalezena.');
+      setTimeout(() => setErrorMessage(null), 5000);
       return;
     }
     console.log('✓ Položka nalezena:', sourceItem.name, `(${sourceItem.quantity} ks)`);
@@ -714,7 +673,8 @@ function App() {
     const addedItem = newFreezerData[targetFreezer][targetDrawer].find(item => item.id === itemId);
     if (!addedItem) {
       console.error('❌ CHYBA: Položka se nepřidala do cíle!');
-      alert('Chyba při přesunu: Položka se nepřidala do cílového šuplíku!');
+      setErrorMessage('❌ Chyba při přesunu: položka se nepřidala do cílového šuplíku.');
+      setTimeout(() => setErrorMessage(null), 5000);
       return;
     }
     console.log('✓ Kontrola: Položka je v cíli');
@@ -730,7 +690,8 @@ function App() {
     const stillInSource = newFreezerData[sourceFreezerType][sourceDrawerId].find(item => item.id === itemId);
     if (stillInSource) {
       console.error('❌ CHYBA: Položka stále v zdrojovém šuplíku!');
-      alert('Chyba při přesunu: Položka se neodebrala ze zdrojového šuplíku!');
+      setErrorMessage('❌ Chyba při přesunu: položka se neodebrala ze zdrojového šuplíku.');
+      setTimeout(() => setErrorMessage(null), 5000);
       return;
     }
     console.log('✓ Kontrola: Položka není ve zdroji');
@@ -749,7 +710,8 @@ function App() {
         po: totalItemsAfter,
         rozdíl: totalItemsAfter - totalItemsBefore
       });
-      alert('KRITICKÁ CHYBA: Počet položek se změnil! Přesun zrušen.');
+      setErrorMessage('❌ Kritická chyba při přesunu: počet položek se změnil. Přesun zrušen.');
+      setTimeout(() => setErrorMessage(null), 7000);
       return;
     }
     console.log('✓ Kontrola: Celkový počet položek zachován');
@@ -786,6 +748,54 @@ function App() {
     ];
     return allItems.some(item => item.name === name);
   };
+
+  // Výsledky vyhledávání - přepočítají se pouze při změně dotazu nebo dat
+  const searchResults = useMemo(() => {
+    const query = searchQuery.trim();
+    if (query === '') return null;
+
+    const results: { item: Item; freezerType: string; freezerName: string; drawerNum: number }[] = [];
+    const freezers = [
+      { type: 'small' as const, name: 'Malý', data: freezerData.small },
+      { type: 'large' as const, name: 'Velký', data: freezerData.large },
+      { type: 'smallMama' as const, name: 'Malý mama', data: freezerData.smallMama },
+      { type: 'cellar' as const, name: '📦 Sklep', data: freezerData.cellar }
+    ];
+
+    freezers.forEach(freezer => {
+      Object.entries(freezer.data).forEach(([drawerKey, items]) => {
+        const drawerNum = parseInt(drawerKey.replace('drawer', ''));
+        items.forEach((item: Item) => {
+          if (item.name.toLocaleLowerCase('cs').includes(query.toLocaleLowerCase('cs'))) {
+            results.push({ item, freezerType: freezer.type, freezerName: freezer.name, drawerNum });
+          }
+        });
+      });
+    });
+
+    // Seskupení a sloučení výsledků podle názvu + umístění
+    const groupedResults: { [name: string]: typeof results } = {};
+    results.forEach(result => {
+      if (!groupedResults[result.item.name]) groupedResults[result.item.name] = [];
+      groupedResults[result.item.name].push(result);
+    });
+
+    Object.keys(groupedResults).forEach(itemName => {
+      const locationMap = new Map<string, typeof results[0]>();
+      groupedResults[itemName].forEach(result => {
+        const key = `${result.freezerType}-${result.drawerNum}`;
+        const existing = locationMap.get(key);
+        if (existing) {
+          existing.item.quantity += result.item.quantity;
+        } else {
+          locationMap.set(key, { ...result, item: { ...result.item } });
+        }
+      });
+      groupedResults[itemName] = Array.from(locationMap.values());
+    });
+
+    return { groupedResults, totalCount: results.length };
+  }, [searchQuery, freezerData]);
 
   const handleToggleFreezer = (freezerType: string) => {
     setOpenFreezers(prev => {
@@ -1324,99 +1334,48 @@ function App() {
                 <p style={{ color: '#999', textAlign: 'center', padding: '2rem', fontStyle: 'italic' }}>
                   Začněte psát pro vyhledávání...
                 </p>
-              ) : (() => {
-                const results: { item: Item; freezerType: string; freezerName: string; drawerNum: number }[] = [];
-                
-                const freezers = [
-                  { type: 'small' as const, name: 'Malý', data: freezerData.small },
-                  { type: 'large' as const, name: 'Velký', data: freezerData.large },
-                  { type: 'smallMama' as const, name: 'Malý mama', data: freezerData.smallMama },
-                  { type: 'cellar' as const, name: '📦 Sklep', data: freezerData.cellar }
-                ];
-                
-                freezers.forEach(freezer => {
-                  Object.entries(freezer.data).forEach(([drawerKey, items]) => {
-                    const drawerNum = parseInt(drawerKey.replace('drawer', ''));
-                    items.forEach((item: Item) => {
-                      if (item.name.toLocaleLowerCase('cs').includes(searchQuery.toLocaleLowerCase('cs'))) {
-                        results.push({
-                          item,
-                          freezerType: freezer.type,
-                          freezerName: freezer.name,
-                          drawerNum
-                        });
-                      }
-                    });
-                  });
-                });
-                
-                // Seskupení výsledků podle názvu položky
-                const groupedResults: { [name: string]: typeof results } = {};
-                results.forEach(result => {
-                  if (!groupedResults[result.item.name]) {
-                    groupedResults[result.item.name] = [];
-                  }
-                  groupedResults[result.item.name].push(result);
-                });
-                
-                // Sloučení duplikátů ze stejného umístění
-                Object.keys(groupedResults).forEach(itemName => {
-                  const locationMap = new Map<string, typeof results[0]>();
-                  groupedResults[itemName].forEach(result => {
-                    const key = `${result.freezerType}-${result.drawerNum}`;
-                    const existing = locationMap.get(key);
-                    if (existing) {
-                      existing.item.quantity += result.item.quantity;
-                    } else {
-                      locationMap.set(key, { ...result, item: { ...result.item } });
-                    }
-                  });
-                  groupedResults[itemName] = Array.from(locationMap.values());
-                });
-                
-                const totalItems = results.length;
-                
-                return totalItems > 0 ? (
-                  <>
-                    <p style={{ color: '#646cff', fontWeight: '600', marginBottom: '0.75rem', padding: '0 1rem' }}>
-                      Nalezeno {Object.keys(groupedResults).length} {Object.keys(groupedResults).length === 1 ? 'položka' : Object.keys(groupedResults).length < 5 ? 'položky' : 'položek'}:
-                    </p>
-                    <div className="items-list">
-                      {Object.entries(groupedResults).map(([itemName, locations]) => {
-                        const totalQuantity = locations.reduce((sum, loc) => sum + loc.item.quantity, 0);
-                        const hasMultipleLocations = locations.length > 1;
-                        
-                        return (
-                          <div key={itemName} className="item">
-                            <div className="item-info">
-                              <span className="item-name">{itemName}</span>
-                              <span className="item-quantity">{totalQuantity} ks</span>
-                            </div>
-                            {hasMultipleLocations ? (
-                              <div style={{ fontSize: '0.9em', color: '#999', marginTop: '0.25rem', marginLeft: '-0.5rem', marginRight: '-0.5rem', paddingLeft: '0.5rem' }}>
-                                {locations.map((result, idx) => (
-                                  <div key={idx} style={{ display: 'flex', alignItems: 'center', marginTop: idx > 0 ? '0.15rem' : '0' }}>
-                                    <span style={{ display: 'inline-block', textAlign: 'right', minWidth: '55px', marginRight: '8px' }}>{result.item.quantity} ks</span>
-                                    <span>— {result.freezerName} → {result.freezerType === 'cellar' ? 'Police' : 'Šuplík'} {result.drawerNum}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            ) : (
-                              <div className="item-location">
-                                {locations[0].item.quantity} ks — {locations[0].freezerName} → {locations[0].freezerType === 'cellar' ? 'Police' : 'Šuplík'} {locations[0].drawerNum}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </>
-                ) : (
-                  <p style={{ textAlign: 'center', padding: '2rem', color: '#999', fontSize: '1.1rem' }}>
-                    ❌ Nenalezeno
+              ) : searchResults && searchResults.totalCount > 0 ? (
+                <>
+                  <p style={{ color: '#646cff', fontWeight: '600', marginBottom: '0.75rem', padding: '0 1rem' }}>
+                    {(() => {
+                      const n = Object.keys(searchResults.groupedResults).length;
+                      return `Nalezeno ${n} ${n === 1 ? 'položka' : n < 5 ? 'položky' : 'položek'}:`;
+                    })()}
                   </p>
-                );
-              })()}
+                  <div className="items-list">
+                    {Object.entries(searchResults.groupedResults).map(([itemName, locations]) => {
+                      const totalQuantity = locations.reduce((sum, loc) => sum + loc.item.quantity, 0);
+                      const hasMultipleLocations = locations.length > 1;
+                      return (
+                        <div key={itemName} className="item">
+                          <div className="item-info">
+                            <span className="item-name">{itemName}</span>
+                            <span className="item-quantity">{totalQuantity} ks</span>
+                          </div>
+                          {hasMultipleLocations ? (
+                            <div style={{ fontSize: '0.9em', color: '#999', marginTop: '0.25rem', marginLeft: '-0.5rem', marginRight: '-0.5rem', paddingLeft: '0.5rem' }}>
+                              {locations.map((result, idx) => (
+                                <div key={idx} style={{ display: 'flex', alignItems: 'center', marginTop: idx > 0 ? '0.15rem' : '0' }}>
+                                  <span style={{ display: 'inline-block', textAlign: 'right', minWidth: '55px', marginRight: '8px' }}>{result.item.quantity} ks</span>
+                                  <span>— {result.freezerName} → {result.freezerType === 'cellar' ? 'Police' : 'Šuplík'} {result.drawerNum}</span>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="item-location">
+                              {locations[0].item.quantity} ks — {locations[0].freezerName} → {locations[0].freezerType === 'cellar' ? 'Police' : 'Šuplík'} {locations[0].drawerNum}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              ) : (
+                <p style={{ textAlign: 'center', padding: '2rem', color: '#999', fontSize: '1.1rem' }}>
+                  ❌ Nenalezeno
+                </p>
+              )}
             </div>
           </div>
         )}
@@ -1434,7 +1393,7 @@ function App() {
 
 <Freezer
         title={isMobile ? "❄️ Malý mraz." : "❄️ Malý mrazák"}
-        drawerCount={3}
+        drawerCount={DRAWER_COUNTS.small}
         freezerType="small"
         drawers={freezerData.small}
         allDrawersFromBothFreezers={{
@@ -1451,7 +1410,7 @@ function App() {
         onMoveItem={(sourceDrawerId, itemId, targetFreezer, targetDrawer) => 
           handleMoveItem('small', sourceDrawerId, itemId, targetFreezer, targetDrawer)
         }
-        totalDrawers={{ small: 3, large: 7, smallMama: 1, cellar: 9 }}
+        totalDrawers={DRAWER_COUNTS}
         openDrawerId={openSection?.startsWith('small-') ? openSection : null}
         onToggleDrawer={(drawerId) => {
           const sectionId = `small-${drawerId}`;
@@ -1463,7 +1422,7 @@ function App() {
 
       <Freezer
         title={isMobile ? "❄️ Velký mraz." : "❄️ Velký mrazák"}
-        drawerCount={7}
+        drawerCount={DRAWER_COUNTS.large}
         freezerType="large"
         drawers={freezerData.large}
         allDrawersFromBothFreezers={{
@@ -1480,7 +1439,7 @@ function App() {
         onMoveItem={(sourceDrawerId, itemId, targetFreezer, targetDrawer) => 
           handleMoveItem('large', sourceDrawerId, itemId, targetFreezer, targetDrawer)
         }
-        totalDrawers={{ small: 3, large: 7, smallMama: 1, cellar: 9 }}
+        totalDrawers={DRAWER_COUNTS}
         openDrawerId={openSection?.startsWith('large-') ? openSection : null}
         onToggleDrawer={(drawerId) => {
           const sectionId = `large-${drawerId}`;
@@ -1492,7 +1451,7 @@ function App() {
 
       <Freezer
         title="❄️ Malý mama"
-        drawerCount={1}
+        drawerCount={DRAWER_COUNTS.smallMama}
         freezerType="smallMama"
         drawers={freezerData.smallMama}
         allDrawersFromBothFreezers={{
@@ -1509,7 +1468,7 @@ function App() {
         onMoveItem={(sourceDrawerId, itemId, targetFreezer, targetDrawer) => 
           handleMoveItem('smallMama', sourceDrawerId, itemId, targetFreezer, targetDrawer)
         }
-        totalDrawers={{ small: 3, large: 7, smallMama: 1, cellar: 9 }}
+        totalDrawers={DRAWER_COUNTS}
         openDrawerId={openSection?.startsWith('smallMama-') ? openSection : null}
         onToggleDrawer={(drawerId) => {
           const sectionId = `smallMama-${drawerId}`;
@@ -1521,7 +1480,7 @@ function App() {
 
       <Freezer
         title="📦 Sklep"
-        drawerCount={9}
+        drawerCount={DRAWER_COUNTS.cellar}
         freezerType="cellar"
         drawers={freezerData.cellar}
         allDrawersFromBothFreezers={{
@@ -1538,7 +1497,7 @@ function App() {
         onMoveItem={(sourceDrawerId, itemId, targetFreezer, targetDrawer) => 
           handleMoveItem('cellar', sourceDrawerId, itemId, targetFreezer, targetDrawer)
         }
-        totalDrawers={{ small: 3, large: 7, smallMama: 1, cellar: 9 }}
+        totalDrawers={DRAWER_COUNTS}
         openDrawerId={openSection?.startsWith('cellar-') ? openSection : null}
         onToggleDrawer={(drawerId) => {
           const sectionId = `cellar-${drawerId}`;
