@@ -19,6 +19,7 @@ export default function SyncModal({ mode, onClose, onGenerate, onEnter, existing
   const [showPassword, setShowPassword] = useState(false);
   const [passwordError, setPasswordError] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isMissingHash, setIsMissingHash] = useState(false);
 
   const handleGenerate = () => {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -40,16 +41,31 @@ export default function SyncModal({ mode, onClose, onGenerate, onEnter, existing
       if (existingSyncCode) {
         const storedHash = await getAdminPasswordHash(existingSyncCode);
         if (!storedHash) {
-          setPasswordError('Chyba: Admin heslo nebylo nalezeno v databázi!');
-          setIsProcessing(false);
-          return;
-        }
-        
-        const isValid = await verifyPasswordHash(adminPassword, storedHash);
-        if (!isValid) {
-          setPasswordError('Nesprávné admin heslo!');
-          setIsProcessing(false);
-          return;
+          // Hash chybí - umožnit nastavení nového hesla (jako při prvním vytvoření)
+          if (!isMissingHash) {
+            // První pokus - informuj uživatele a zobraz confirm pole
+            setIsMissingHash(true);
+            setPasswordError('Admin heslo nebylo nalezeno. Nastavte nové heslo.');
+            setIsProcessing(false);
+            return;
+          }
+          if (adminPassword !== confirmPassword) {
+            setPasswordError('Hesla se neshodují!');
+            setIsProcessing(false);
+            return;
+          }
+          if (adminPassword.length < 4) {
+            setPasswordError('Heslo musí mít alespoň 4 znaky!');
+            setIsProcessing(false);
+            return;
+          }
+        } else {
+          const isValid = await verifyPasswordHash(adminPassword, storedHash);
+          if (!isValid) {
+            setPasswordError('Nesprávné admin heslo!');
+            setIsProcessing(false);
+            return;
+          }
         }
       } else {
         // Vytváříme první sync kód - zkontroluj shodu hesel
@@ -143,7 +159,7 @@ export default function SyncModal({ mode, onClose, onGenerate, onEnter, existing
                     </button>
                   </div>
                   
-                  {!existingSyncCode && (
+                  {(!existingSyncCode || isMissingHash) && (
                     <>
                       <label style={{ marginTop: '0.75rem' }}>Potvrďte heslo:</label>
                       <input
@@ -164,7 +180,7 @@ export default function SyncModal({ mode, onClose, onGenerate, onEnter, existing
                       {passwordError}
                     </p>
                   )}
-                  {!existingSyncCode && (
+                  {(!existingSyncCode || isMissingHash) && (
                     <p style={{ fontSize: '0.85em', color: '#ccc', margin: '0.5rem 0 0 0' }}>
                       Toto heslo budete potřebovat pro generování dalších sync kódů.
                     </p>
@@ -176,7 +192,7 @@ export default function SyncModal({ mode, onClose, onGenerate, onEnter, existing
                   <button 
                     onClick={handleConfirmGenerate} 
                     style={{ backgroundColor: '#4caf50' }}
-                    disabled={!adminPassword || (!existingSyncCode && !confirmPassword) || isProcessing}
+                    disabled={!adminPassword || ((!existingSyncCode || isMissingHash) && !confirmPassword) || isProcessing}
                   >
                     {isProcessing ? 'Zpracovávám...' : 'Použít tento kód'}
                   </button>

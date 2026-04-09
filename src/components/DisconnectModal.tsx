@@ -13,17 +13,16 @@ export function DisconnectModal({ onClose, onConfirm }: DisconnectModalProps) {
   const [isProcessing, setIsProcessing] = useState(false);
 
   const handleConfirm = async () => {
-    if (!password) {
-      setError('Zadejte admin heslo');
-      return;
-    }
-
     setIsProcessing(true);
     const success = await onConfirm(password);
     setIsProcessing(false);
 
     if (!success) {
-      setError('Nesprávné admin heslo!');
+      if (!password) {
+        setError('Zadejte admin heslo');
+      } else {
+        setError('Nesprávné admin heslo!');
+      }
     }
   };
 
@@ -35,7 +34,8 @@ export function DisconnectModal({ onClose, onConfirm }: DisconnectModalProps) {
           Zadejte admin heslo pro potvrzení odpojení.<br/>
           Ostatní uživatelé budou také odpojeni a budou muset zadat nový sync kód.<br/>
           <br/>
-          <strong>Po odpojení můžete vytvořit nový sync kód.</strong>
+          <strong>Po odpojení můžete vytvořit nový sync kód.</strong><br/>
+          <em style={{ fontSize: '0.85em', color: '#888' }}>Pokud jste smazali hash z Firebase, pole hesla nechte prázdné.</em>
         </p>
         
         <div className="form-field">
@@ -83,7 +83,7 @@ export function DisconnectModal({ onClose, onConfirm }: DisconnectModalProps) {
           <button onClick={onClose} disabled={isProcessing}>Zrušit</button>
           <button 
             onClick={handleConfirm}
-            disabled={!password || isProcessing}
+            disabled={isProcessing}
             style={{ backgroundColor: '#f44336' }}
           >
             {isProcessing ? 'Odpojuji...' : 'Odpojit'}

@@ -847,14 +847,13 @@ function App() {
 
     // Ověříme heslo proti hash v Firebase
     const storedHash = await getAdminPasswordHash(syncCode);
-    if (!storedHash) {
-      return false;
+    if (storedHash) {
+      const isValid = await verifyPasswordHash(password, storedHash);
+      if (!isValid) {
+        return false;
+      }
     }
-
-    const isValid = await verifyPasswordHash(password, storedHash);
-    if (!isValid) {
-      return false;
-    }
+    // Pokud hash chybí (byl smazán), povolíme odpojení bez hesla
     
     // Invalidujeme kód pro ostatní uživatele
     await invalidateSyncCode(syncCode);
